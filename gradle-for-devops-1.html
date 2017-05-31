@@ -797,14 +797,12 @@ the task:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="groovy">task provision {
+<pre class="CodeRay highlight"><code data-lang="groovy">task provision(<span class="key">type</span>: Exec) {
     inputs.file(<span class="string"><span class="delimiter">&quot;</span><span class="content">provision.sh</span><span class="delimiter">&quot;</span></span>)
     outputs.dir(<span class="string"><span class="delimiter">&quot;</span><span class="content">my_dir</span><span class="delimiter">&quot;</span></span>)
-    doLast {
-        <span class="comment">// Execute a Bash scripts that contains provisioning code</span>
-        <span class="comment">// Specifically, it should create the target directory</span>
-        <span class="string"><span class="delimiter">&quot;</span><span class="content">provision.sh</span><span class="delimiter">&quot;</span></span>.execute()
-    }
+    <span class="comment">// Execute a Bash scripts that contains provisioning code</span>
+    <span class="comment">// Specifically, it should create the target directory</span>
+    commandLine <span class="string"><span class="delimiter">&quot;</span><span class="content">./provision.sh</span><span class="delimiter">&quot;</span></span>
 }</code></pre>
 </div>
 </div>
@@ -1025,7 +1023,7 @@ Group
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2017-05-28 12:12:17 -07:00
+Last updated 2017-05-30 20:00:02 -07:00
 </div>
 </div>
 </body>
