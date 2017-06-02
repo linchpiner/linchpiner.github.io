@@ -416,97 +416,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 .hide-for-print{display:none!important}
 .show-for-print{display:inherit!important}}
 </style>
-<style>
-/* Stylesheet for CodeRay to match GitHub theme | MIT License | http://foundation.zurb.com */
-/*pre.CodeRay {background-color:#f7f7f8;}*/
-.CodeRay .line-numbers{border-right:1px solid #d8d8d8;padding:0 0.5em 0 .25em}
-.CodeRay span.line-numbers{display:inline-block;margin-right:.5em;color:rgba(0,0,0,.3)}
-.CodeRay .line-numbers strong{color:rgba(0,0,0,.4)}
-table.CodeRay{border-collapse:separate;border-spacing:0;margin-bottom:0;border:0;background:none}
-table.CodeRay td{vertical-align: top;line-height:1.45}
-table.CodeRay td.line-numbers{text-align:right}
-table.CodeRay td.line-numbers>pre{padding:0;color:rgba(0,0,0,.3)}
-table.CodeRay td.code{padding:0 0 0 .5em}
-table.CodeRay td.code>pre{padding:0}
-.CodeRay .debug{color:#fff !important;background:#000080 !important}
-.CodeRay .annotation{color:#007}
-.CodeRay .attribute-name{color:#000080}
-.CodeRay .attribute-value{color:#700}
-.CodeRay .binary{color:#509}
-.CodeRay .comment{color:#998;font-style:italic}
-.CodeRay .char{color:#04d}
-.CodeRay .char .content{color:#04d}
-.CodeRay .char .delimiter{color:#039}
-.CodeRay .class{color:#458;font-weight:bold}
-.CodeRay .complex{color:#a08}
-.CodeRay .constant,.CodeRay .predefined-constant{color:#008080}
-.CodeRay .color{color:#099}
-.CodeRay .class-variable{color:#369}
-.CodeRay .decorator{color:#b0b}
-.CodeRay .definition{color:#099}
-.CodeRay .delimiter{color:#000}
-.CodeRay .doc{color:#970}
-.CodeRay .doctype{color:#34b}
-.CodeRay .doc-string{color:#d42}
-.CodeRay .escape{color:#666}
-.CodeRay .entity{color:#800}
-.CodeRay .error{color:#808}
-.CodeRay .exception{color:inherit}
-.CodeRay .filename{color:#099}
-.CodeRay .function{color:#900;font-weight:bold}
-.CodeRay .global-variable{color:#008080}
-.CodeRay .hex{color:#058}
-.CodeRay .integer,.CodeRay .float{color:#099}
-.CodeRay .include{color:#555}
-.CodeRay .inline{color:#000}
-.CodeRay .inline .inline{background:#ccc}
-.CodeRay .inline .inline .inline{background:#bbb}
-.CodeRay .inline .inline-delimiter{color:#d14}
-.CodeRay .inline-delimiter{color:#d14}
-.CodeRay .important{color:#555;font-weight:bold}
-.CodeRay .interpreted{color:#b2b}
-.CodeRay .instance-variable{color:#008080}
-.CodeRay .label{color:#970}
-.CodeRay .local-variable{color:#963}
-.CodeRay .octal{color:#40e}
-.CodeRay .predefined{color:#369}
-.CodeRay .preprocessor{color:#579}
-.CodeRay .pseudo-class{color:#555}
-.CodeRay .directive{font-weight:bold}
-.CodeRay .type{font-weight:bold}
-.CodeRay .predefined-type{color:inherit}
-.CodeRay .reserved,.CodeRay .keyword {color:#000;font-weight:bold}
-.CodeRay .key{color:#808}
-.CodeRay .key .delimiter{color:#606}
-.CodeRay .key .char{color:#80f}
-.CodeRay .value{color:#088}
-.CodeRay .regexp .delimiter{color:#808}
-.CodeRay .regexp .content{color:#808}
-.CodeRay .regexp .modifier{color:#808}
-.CodeRay .regexp .char{color:#d14}
-.CodeRay .regexp .function{color:#404;font-weight:bold}
-.CodeRay .string{color:#d20}
-.CodeRay .string .string .string{background:#ffd0d0}
-.CodeRay .string .content{color:#d14}
-.CodeRay .string .char{color:#d14}
-.CodeRay .string .delimiter{color:#d14}
-.CodeRay .shell{color:#d14}
-.CodeRay .shell .delimiter{color:#d14}
-.CodeRay .symbol{color:#990073}
-.CodeRay .symbol .content{color:#a60}
-.CodeRay .symbol .delimiter{color:#630}
-.CodeRay .tag{color:#008080}
-.CodeRay .tag-special{color:#d70}
-.CodeRay .variable{color:#036}
-.CodeRay .insert{background:#afa}
-.CodeRay .delete{background:#faa}
-.CodeRay .change{color:#aaf;background:#007}
-.CodeRay .head{color:#f8f;background:#505}
-.CodeRay .insert .insert{color:#080}
-.CodeRay .delete .delete{color:#800}
-.CodeRay .change .change{color:#66f}
-.CodeRay .head .head{color:#f4f}
-</style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.4.0/css/font-awesome.min.css">
 </head>
 <body class="article">
 <div id="header">
@@ -635,16 +545,16 @@ depends on <code>provision</code>.</p>
 <div class="listingblock">
 <div class="title">build.gradle</div>
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="groovy">task provision {
+<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">task provision {
     doLast {
-        <span class="comment">// provisioning code</span>
+        // provisioning code
     }
 }
 
 task deploy {
     dependsOn provision
     doLast {
-        <span class="comment">// deployment code</span>
+        // deployment code
     }
 }</code></pre>
 </div>
@@ -704,10 +614,10 @@ task, then you can add a check directly to the task:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="groovy">task provision {
+<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">task provision {
     doLast {
-        <span class="keyword">if</span> (<span class="comment">/* check if provisioning is required */</span>) {
-            <span class="comment">// provisioning code</span>
+        if (/* check if provisioning is required */) {
+            // provisioning code
         }
     }
 }</code></pre>
@@ -720,10 +630,10 @@ know when it should skip the task:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="groovy">task provision {
-    onlyIf { <span class="comment">/* check if provisioning is required */</span> }
+<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">task provision {
+    onlyIf { /* check if provisioning is required */ }
     doLast {
-        <span class="comment">// provisioning code</span>
+        // provisioning code
     }
 }</code></pre>
 </div>
@@ -759,11 +669,11 @@ will prepare the environment in that directory:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="groovy">task provision {
-    outputs.dir(<span class="string"><span class="delimiter">&quot;</span><span class="content">my_dir</span><span class="delimiter">&quot;</span></span>)
+<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">task provision {
+    outputs.dir("my_dir")
     doLast {
-        <span class="comment">// provisioning code</span>
-        file(<span class="string"><span class="delimiter">&quot;</span><span class="content">my_dir</span><span class="delimiter">&quot;</span></span>).mkdirs()
+        // provisioning code
+        file("my_dir").mkdirs()
     }
 }</code></pre>
 </div>
@@ -797,12 +707,12 @@ the task:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="groovy">task provision(<span class="key">type</span>: Exec) {
-    inputs.file(<span class="string"><span class="delimiter">&quot;</span><span class="content">provision.sh</span><span class="delimiter">&quot;</span></span>)
-    outputs.dir(<span class="string"><span class="delimiter">&quot;</span><span class="content">my_dir</span><span class="delimiter">&quot;</span></span>)
-    <span class="comment">// Execute a Bash scripts that contains provisioning code</span>
-    <span class="comment">// Specifically, it should create the target directory</span>
-    commandLine <span class="string"><span class="delimiter">&quot;</span><span class="content">./provision.sh</span><span class="delimiter">&quot;</span></span>
+<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">task provision(type: Exec) {
+    inputs.file("provision.sh")
+    outputs.dir("my_dir")
+    // Execute a Bash scripts that contains provisioning code
+    // Specifically, it should create the target directory
+    commandLine "./provision.sh"
 }</code></pre>
 </div>
 </div>
@@ -816,15 +726,15 @@ application is to make <code>provision</code> and <code>deploy</code> task indep
 <div class="listingblock">
 <div class="title">build.gradle</div>
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="groovy">task provision {
+<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">task provision {
     doLast {
-        <span class="comment">// provisioning code</span>
+        // provisioning code
     }
 }
 
 task deploy {
     doLast {
-        <span class="comment">// deployment code</span>
+        // deployment code
     }
 }</code></pre>
 </div>
@@ -839,10 +749,10 @@ executes both tasks, it executes <code>deploy</code> after <code>provision</code
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="groovy">task deploy {
+<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">task deploy {
     mustRunAfter provision
     doLast {
-        <span class="comment">// deployment code</span>
+        // deployment code
     }
 }</code></pre>
 </div>
@@ -879,7 +789,7 @@ BUILD SUCCESSFUL</pre>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="groovy">task all {
+<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">task all {
     dependsOn provision, deploy
 }</code></pre>
 </div>
@@ -899,27 +809,110 @@ BUILD SUCCESSFUL</pre>
 </div>
 </div>
 <div class="sect2">
+<h3 id="_task_finalizer"><a class="link" href="#_task_finalizer">Task Finalizer</a></h3>
+<div class="paragraph">
+<p>Gradle allows defining a
+<a href="https://docs.gradle.org/current/userguide/more_about_tasks.html#sec:finalizer_tasks">finalizing tasks</a> for any
+task. Finalizer tasks will be executed even if the finalized task fails and
+finalizer tasks are not executed if the finalized task didn&#8217;t do any work.
+Example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">task clean {
+    doLast {
+        // clean up code
+    }
+}
+
+task provision {
+    doLast {
+        // provisioning code
+    }
+    finalizedBy clean
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>$ gradle provision
+:provision
+:clean
+
+BUILD SUCCESSFUL</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Finalizer tasks are useful in situations where you need to clean up resources
+created by other tasks regardless of the build failing or succeeding. Another
+useful use case for finalizer tasks is generating new resources (a report, for
+example) using results from the other tasks, which can be used independently or
+all together. For example, you can use <code>provisionHost1</code>, <code>provisionHost2</code> to
+provision one host, or both tasks to provision all hosts. Then you can use the
+finalizer task to generate a provisioning report.</p>
+</div>
+<div class="paragraph">
+<p>Note that if you define a finalizer task for several tasks, which have
+dependencies between them, then the finalizer task will be executed only once,
+after the last task in the task execution. For example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">task clean {
+    doLast {
+        // clean up code
+    }
+}
+
+task provision {
+    doLast {
+        // provisioning code
+    }
+    finalizedBy clean
+}
+
+task deploy {
+    dependsOn provision
+    doLast {
+        // deployment code
+    }
+    finalizedBy clean
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>$ gradle deploy
+:provision
+:deploy
+:clean
+
+BUILD SUCCESSFUL</pre>
+</div>
+</div>
+</div>
+<div class="sect2">
 <h3 id="_defining_dependencies_and_ordering"><a class="link" href="#_defining_dependencies_and_ordering">Defining Dependencies and Ordering</a></h3>
 <div class="paragraph">
-<p>In Gradle, there are two equivalent ways to define dependencies and ordering
-for the task: inside and outside the task definition. I personally prefer the
-first way, because it allows to consolidate the task definition in one block of
-code. However, the second way is useful, for example, when you set dependencies
-or ordering rules programmatically. The following definitions are equivalent:</p>
+<p>In Gradle, there are two ways to define dependencies and ordering for the task:
+inside and outside the task definition. I personally prefer the first way,
+because it allows to consolidate the task definition in one block of code.
+However, the second way is useful, for example, when you set dependencies or
+ordering rules programmatically. The following definitions are equivalent:</p>
 </div>
 <div class="listingblock">
 <div class="title">build.gradle</div>
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="groovy">task provision {
+<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">task provision {
     doLast {
-        <span class="comment">// provisioning code</span>
+        // provisioning code
     }
 }
 
 task deploy {
     mustRunAfter provision
     doLast {
-        <span class="comment">// deployment code</span>
+        // deployment code
     }
 }
 
@@ -931,15 +924,15 @@ task all {
 <div class="listingblock">
 <div class="title">build.gradle</div>
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="groovy">task provision {
+<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">task provision {
     doLast {
-        <span class="comment">// provisioning code</span>
+        // provisioning code
     }
 }
 
 task deploy {
     doLast {
-        <span class="comment">// deployment code</span>
+        // deployment code
     }
 }
 
@@ -947,6 +940,85 @@ task all {
 }
 
 deploy.mustRunAfter provision
+all.dependsOn provision, deploy</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note that the same technique works for any task metadata, for example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">deploy.finalizedBy clean</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_task_references"><a class="link" href="#_task_references">Task References</a></h3>
+<div class="paragraph">
+<p>In the previous examples, we used task names to reference them in <code>dependsOn</code>,
+<code>mustRunAfter</code>, or <code>finalizedBy</code>. There are many potential cases when you need
+to reference a task before its definition, for example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">task all {
+    dependsOn provision, deploy <i class="conum" data-value="1"></i><b>(1)</b>
+}
+
+task provision { }
+
+task deploy { }</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Attempt to reference tasks before they defined</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Using the <code>all</code> task will fail:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>$ gradle all
+FAILURE: Build failed with an exception.
+...
+* What went wrong:
+A problem occurred evaluating root project 'gradle'.
+&gt; Could not find property 'provision' on task ':all'.
+...</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If you still want to reference tasks before defining them, then you can use
+strings for <code>dependsOn</code>, <code>mustRunAfter</code>, or <code>finalizedBy</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">task all {
+    dependsOn "provision", "deploy"
+}
+
+task provision { }
+
+task deploy { }</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Another option is to add references to the task after defining the referenced
+tasks:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">task all { }
+
+task provision { }
+
+task deploy { }
+
 all.dependsOn provision, deploy</code></pre>
 </div>
 </div>
@@ -960,20 +1032,20 @@ example:</p>
 <div class="listingblock">
 <div class="title">build.gradle</div>
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="groovy">task provision {
-    group <span class="string"><span class="delimiter">&quot;</span><span class="content">ops</span><span class="delimiter">&quot;</span></span>
-    description <span class="string"><span class="delimiter">&quot;</span><span class="content">Provisions the execution environment</span><span class="delimiter">&quot;</span></span>
+<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">task provision {
+    group "ops"
+    description "Provisions the execution environment"
     doLast {
-        <span class="comment">// provisioning code</span>
+        // provisioning code
     }
 }
 
 task deploy {
-    group <span class="string"><span class="delimiter">&quot;</span><span class="content">ops</span><span class="delimiter">&quot;</span></span>
-    description <span class="string"><span class="delimiter">&quot;</span><span class="content">Deploys the application</span><span class="delimiter">&quot;</span></span>
+    group "ops"
+    description "Deploys the application"
     mustRunAfter provision
     doLast {
-        <span class="comment">// deployment code</span>
+        // deployment code
     }
 }</code></pre>
 </div>
@@ -984,7 +1056,7 @@ build:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code>$ gradle tasks
+<pre class="prettyprint highlight"><code>$ gradle tasks
 ...
 Ops tasks
 ---------
@@ -999,7 +1071,7 @@ specific task or multiple tasks matching the given task name:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code>$ gradle help --task deploy
+<pre class="prettyprint highlight"><code>$ gradle help --task deploy
 ...
 Detailed task information for deploy
 
@@ -1023,8 +1095,11 @@ Group
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2017-05-30 20:00:02 -07:00
+Last updated 2017-06-02 10:56:56 -07:00
 </div>
 </div>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.js"></script>
+<script>prettyPrint()</script>
 </body>
 </html>
