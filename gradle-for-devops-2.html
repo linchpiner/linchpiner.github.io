@@ -5,7 +5,7 @@
 <!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 1.5.5">
-<title>Gradle for DevOps, Part 1</title>
+<title>Gradle for DevOps, Part 2</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
 /* Asciidoctor default stylesheet | MIT License | http://asciidoctor.org */
@@ -421,672 +421,514 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </head>
 <body class="article">
 <div id="header">
-<h1>Gradle for DevOps, Part 1</h1>
+<h1>Gradle for DevOps, Part 2</h1>
 </div>
 <div id="content">
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p><a href="https://gradle.org/">Gradle</a> is an open source build automation system, which is
-popular in Java, Groovy, and Scala ecosystems. For example, Android Studio uses
-Gradle to build Android applications. At the same time, there are many reasons
-why you should consider using Gradle in your project, even if it&#8217;s not Java,
-Groovy or Scala.</p>
-</div>
-<div class="paragraph">
-<p>We will focus on Gradle&#8217;s features that allow using Gradle as a DevOps tool.
-It&#8217;s not about a new tool that should replace, for example, well known
-configuration management or continuous delivery tools. Instead, it&#8217;s about
-using Gradle as a DevOps "glue" for your existing tools and various scripts.
-There are several obvious use cases for Gradle, such as running external
-scripts from Gradle build file, or running Gradle build file from Jenkins via
-the <a href="https://wiki.jenkins-ci.org/display/JENKINS/Gradle+Plugin">Gradle Plugin</a>. In addition to that, I want to
-highlight the following:</p>
+<p>In the <a href="gradle-for-devops-1.html">first part</a>, we discussed several features
+of Gradle, a popular open source build tool, that allow using it in a DevOps
+word. Specifically, Gradle&#8217;s task-based approach can be used for general
+operations, such as provisioning or deployment. In this part, we will discuss
+how to set and use parameters in your Groovy project.</p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_simple_installation"><a class="link" href="#_simple_installation">Simple Installation</a></h2>
+<h2 id="_environment_variables"><a class="link" href="#_environment_variables">Environment Variables</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Gradle takes care about your project dependencies, but what is more important,
-it also takes care about dependencies for the build file itself. With
-<a href="https://docs.gradle.org/current/userguide/gradle_wrapper.html">Gradle Wrapper</a>, the only dependency for your
-Gradle project you need to install on the target machine is Java (JDK or JRE).
-The Gradle Wrapper contains <code>gradlew</code> (for Unix-like platforms) and
-<code>gradlew.bat</code> (for Windows) files. When you run the corresponding file for the
-first time, it downloads all of the required dependencies. This means that you
-don’t have to manually install Gradle yourself and also that you will use
-exactly the version of Gradle that the build is designed for.</p>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_automation_framework"><a class="link" href="#_automation_framework">Automation Framework</a></h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>Gradle is written in Java and uses Groovy for its domain-specific language
-(DSL). While your primary use case for Gradle as a DevOps tool might be using
-it to call other scripts, you can also extend Gradle project by using the
-existing Java libraries, writing Java or Groovy code. As I mentioned above,
-Gradle will take of all of the dependencies that are required to use your
-Gradle project on a new machine. There are many Java libraries and Gradle
-plugins that might be useful for DevOps, such as Gradle
-<a href="https://github.com/int128/gradle-ssh-plugin">SSH</a> or
-<a href="https://github.comclassmethod/gradle-aws-plugin">AWS</a> plugins.</p>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_continuous_delivery_tool_for_non_jvm_projects"><a class="link" href="#_continuous_delivery_tool_for_non_jvm_projects">Continuous Delivery Tool for non-JVM Projects</a></h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>You can use Gradle for build and test phases of your project, even if it&#8217;s not
-Java, Groovy or Scala. For example, you can build C, C++, Go projects with
-Gradle. If, for some reason, you cannot use Gradle for that, you can always
-call a native build tool for your language. At least as a temporary solution.</p>
-</div>
-<div class="paragraph">
-<p>You can use the same Gradle build to package your project, publish and deploy
-the application. To build your project you should define its dependencies,
-sources (inputs) and artifacts (outputs), which your can use also to automate
-packaging and distribution. As a build tool, Gradle provides very useful
-features, such as <a href="https://docs.gradle.org/current/userguide/continuous_build.html">continuous build</a>, when
-Gradle waits for changes to the build inputs. When a change occurs, Gradle will
-be automatically executed again and the process repeats.</p>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_task_based_approach"><a class="link" href="#_task_based_approach">Task-Based Approach</a></h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>Remember your projects where you wrote a number of Bash scripts for various
-actions, such as <code>deploy.sh</code> or <code>publish.sh</code>? Probably, these script shared the
-common code, which you put in a separate file. In some cases, you need to
-process command line arguments for your scripts to handle different usage
-scenarios. Sometimes, you need to check if a certain condition is met. For
-example, you need to download a huge file, and you want to skip that step if
-the file exists.</p>
-</div>
-<div class="paragraph">
-<p>There is a pattern in such projects: there are tasks available for execution
-and there are dependencies between these tasks. Using Bash for such task-based
-approach makes your project portable, but you have to write boilerplate code to
-handle command line arguments and implement dependencies between the tasks.
-Also, you need to document the tasks and keep the documentation up to date.</p>
-</div>
-<div class="paragraph">
-<p>With Gradle, you can define all of the tasks and their dependencies and order
-in a consistent way. Let&#8217;s take a look to several examples:</p>
-</div>
-<div class="sect2">
-<h3 id="_task_dependency"><a class="link" href="#_task_dependency">Task Dependency</a></h3>
-<div class="paragraph">
-<p>In this example, we will implement two tasks for your project:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><code>provision</code> task configures the execution environment for your project, for
-example, installs an application server</p>
-</li>
-<li>
-<p><code>deploy</code> task installs your compiled and packaged application into the
-environment, prepared by the <code>provision</code> task.</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p>For the sake of simplicity, let&#8217;s assume for the moment that there is only one
-environment. In Gradle, we define these two tasks and specify that <code>deploy</code>
-depends on <code>provision</code>.</p>
+<p>A standard way to configure any script is to use environment variables.  You
+can use the same approach for Gradle build file. You can use the
+<code>java.lang.System</code> class for that. The <code>java.lang</code> package is imported by
+default in the Gradle build file, so you can use <code>System</code> directly. For
+example:</p>
 </div>
 <div class="listingblock">
 <div class="title">build.gradle</div>
 <div class="content">
-<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">task provision {
-    doLast {
-        // provisioning code
-    }
-}
+<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">String host = System.getenv("MY_HOST") ?: "127.0.0.1"           <i class="conum" data-value="1"></i><b>(1)</b>
+String user = System.getenv("MY_USER") ?: System.getenv("USER") <i class="conum" data-value="2"></i><b>(2)</b>
 
-task deploy {
-    dependsOn provision
+task checkConnection {
+    description "Checks connection to ${host}"                  <i class="conum" data-value="3"></i><b>(3)</b>
     doLast {
-        // deployment code
+        println "Checking connection to ${user}@${host} ..."    <i class="conum" data-value="4"></i><b>(4)</b>
     }
 }</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Now you can use Gradle to execute the <code>deploy</code> task:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre>$ gradle deploy
-:provision
-:deploy
-
-BUILD SUCCESSFUL</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>As you see, Gradle has executed <code>provision</code> before <code>deploy</code> to satisfy the
-dependencies between the tasks. It works as expected, but we want to make it
-better: by design we will use <code>deploy</code> much more often then <code>provision</code>,
-because you need to deploy your application every time you have a new build. At
-the same time, you need to use <code>provision</code> only for new environments or when
-you need to change the execution environment (for example, to install a new
-version of the application server). Therefore, you do not need to provision the
-environment from the scratch every time when you deploy a new version. There
-are several options for that:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Use external configuration management (CM) tool for provisioning (call it
-from the <code>provision</code> task). Most of the modern CM tools allow defining the
-target state declaratively. If the target system is in the target state, then
-CM tool does nothing ('idempotency'). At the same time, if there is any
-change in the definition of the target state or the target system (our
-execution environment) has a state that differs from the target state, CM
-tools makes required actions to achieve the target state from the current
-observable state. In this case, you can use our Gradle tasks as they are and
-CM tool called from the <code>provision</code> task will do nothing, if the environment
-is already provisioned.</p>
-</li>
-<li>
-<p>Use a predicate or up-to-date check for the <code>provision</code> task (see
-<a href="#task-predicate">Task Predicate</a> and <a href="#task-up-to-date-check">Task Up-to-date Check</a>).</p>
-</li>
-<li>
-<p>Make the <code>provision</code> and <code>deploy</code> tasks independent (see <a href="#task-ordering">Task Ordering</a>).</p>
-</li>
-</ul>
-</div>
-</div>
-<div class="sect2">
-<h3 id="task-predicate"><a class="link" href="#task-predicate">Task Predicate</a></h3>
-<div class="paragraph">
-<p>If you do not use a smart configuration management tool for your <code>provision</code>
-task, then you can add a check directly to the task:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">task provision {
-    doLast {
-        if (/* check if provisioning is required */) {
-            // provisioning code
-        }
-    }
-}</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Alternatively, you can use the <code>onlyIf</code>
-<a href="https://docs.gradle.org/current/userguide/more_about_tasks.html#sec:using_a_predicate">predicate</a> to let Gradle
-know when it should skip the task:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">task provision {
-    onlyIf { /* check if provisioning is required */ }
-    doLast {
-        // provisioning code
-    }
-}</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>The predicate is evaluated just before the task is due to be executed. For
-example, if provisioning is not required:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre>$ gradle deploy
-:provision SKIPPED
-:deploy
-
-BUILD SUCCESSFUL</pre>
-</div>
-</div>
-</div>
-<div class="sect2">
-<h3 id="task-up-to-date-check"><a class="link" href="#task-up-to-date-check">Task Up-to-date Check</a></h3>
-<div class="paragraph">
-<p>Another option for a conditional provisioning is to let Gradle decide when it
-needs to execute the <code>provision</code> task. In the most common case, a Gradle task
-takes some inputs and generates some outputs. As part of
-<a href="https://docs.gradle.org/current/userguide/more_about_tasks.html#sec:up_to_date_checks">incremental build</a>,
-Gradle tests whether any of the task inputs or outputs have changed since the
-last build. If they haven’t, Gradle can consider the task up to date and
-therefore skip executing its actions. This is especially efficient if you
-provision a local machine (the same machine where you run Gradle). You should
-define at least one output for the task. In the following example we define a
-directory as the only output for the <code>provision</code> task, assuming that the task
-will prepare the environment in that directory:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">task provision {
-    outputs.dir("my_dir")
-    doLast {
-        // provisioning code
-        file("my_dir").mkdirs()
-    }
-}</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>When you execute the <code>deploy</code> task for the first time, it 'provisions' the
-environment and creates the <code>my_dir</code> directory. For subsequent calls, the
-<code>provision</code> task won&#8217;t be executed:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre>$ gradle deploy
-:provision
-:deploy
-
-BUILD SUCCESSFUL
-
-$ gradle deploy
-:provision UP-TO-DATE
-:deploy
-
-BUILD SUCCESSFUL</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>For real use cases, it is reasonable to define the task inputs as well. For the
-<code>provision</code> task it can be a definition of the environment in a separate file,
-or it can be a provisioning script in Bash. When Gradle detects that the input
-(provisioning script) is newer than the output (target directory) it executes
-the task:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">task provision(type: Exec) {
-    inputs.file("provision.sh")
-    outputs.dir("my_dir")
-    // Execute a Bash scripts that contains provisioning code
-    // Specifically, it should create the target directory
-    commandLine "./provision.sh"
-}</code></pre>
-</div>
-</div>
-</div>
-<div class="sect2">
-<h3 id="task-ordering"><a class="link" href="#task-ordering">Task Ordering</a></h3>
-<div class="paragraph">
-<p>As we discussed, other option to skip the <code>provision</code> task when you deploy your
-application is to make <code>provision</code> and <code>deploy</code> task independent:</p>
-</div>
-<div class="listingblock">
-<div class="title">build.gradle</div>
-<div class="content">
-<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">task provision {
-    doLast {
-        // provisioning code
-    }
-}
-
-task deploy {
-    doLast {
-        // deployment code
-    }
-}</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Now you can execute <code>deploy</code> independently of <code>provision</code>. If you want to
-provision the environment and deploy your application at the same time, then
-you can specify both tasks as arguments for Gradle, or you can define a new
-task, for example, <code>all</code> that depends on both tasks. In both cases, you need to
-set a right order for the <code>provision</code> and <code>deploy</code> tasks, so when Gradle
-executes both tasks, it executes <code>deploy</code> after <code>provision</code>:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">task deploy {
-    mustRunAfter provision
-    doLast {
-        // deployment code
-    }
-}</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Here we specify that <code>deploy</code> runs after <code>provision</code>. Now we can execute
-<code>deploy</code> without provisioning:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre>$ gradle deploy
-:deploy
-
-BUILD SUCCESSFUL</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>If you want to provision the environment before deploying the application, then
-you can specify both tasks as command line arguments for Gradle. The order in
-the command line is not important, because you have explicitly set task
-ordering in the Gradle build file:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre>$ gradle deploy provision
-:provision
-:deploy
-
-BUILD SUCCESSFUL</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Alternatively, you can add a new task that depends on both tasks:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">task all {
-    dependsOn provision, deploy
-}</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Now you can execute the <code>all</code> task to provision and deploy:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre>$ gradle all
-:provision
-:deploy
-:all
-
-BUILD SUCCESSFUL</pre>
-</div>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_task_finalizer"><a class="link" href="#_task_finalizer">Task Finalizer</a></h3>
-<div class="paragraph">
-<p>Gradle allows defining a
-<a href="https://docs.gradle.org/current/userguide/more_about_tasks.html#sec:finalizer_tasks">finalizing tasks</a> for any
-task. Finalizer tasks will be executed even if the finalized task fails and
-finalizer tasks are not executed if the finalized task didn&#8217;t do any work.
-Example:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">task clean {
-    doLast {
-        // clean up code
-    }
-}
-
-task provision {
-    doLast {
-        // provisioning code
-    }
-    finalizedBy clean
-}</code></pre>
-</div>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre>$ gradle provision
-:provision
-:clean
-
-BUILD SUCCESSFUL</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Finalizer tasks are useful in situations where you need to clean up resources
-created by other tasks regardless of the build failing or succeeding. Another
-useful use case for finalizer tasks is generating new resources (a report, for
-example) using results from the other tasks, which can be used independently or
-all together. For example, you can use <code>provisionHost1</code>, <code>provisionHost2</code> to
-provision one host, or both tasks to provision all hosts. Then you can use the
-finalizer task to generate a provisioning report.</p>
-</div>
-<div class="paragraph">
-<p>Note that if you define a finalizer task for several tasks, which have
-dependencies between them, then the finalizer task will be executed only once,
-after the last task in the task execution. For example:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">task clean {
-    doLast {
-        // clean up code
-    }
-}
-
-task provision {
-    doLast {
-        // provisioning code
-    }
-    finalizedBy clean
-}
-
-task deploy {
-    dependsOn provision
-    doLast {
-        // deployment code
-    }
-    finalizedBy clean
-}</code></pre>
-</div>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre>$ gradle deploy
-:provision
-:deploy
-:clean
-
-BUILD SUCCESSFUL</pre>
-</div>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_defining_dependencies_and_ordering"><a class="link" href="#_defining_dependencies_and_ordering">Defining Dependencies and Ordering</a></h3>
-<div class="paragraph">
-<p>In Gradle, there are two ways to define dependencies and ordering for the task:
-inside and outside the task definition. I personally prefer the first way,
-because it allows to consolidate the task definition in one block of code.
-However, the second way is useful, for example, when you set dependencies or
-ordering rules programmatically. The following definitions are equivalent:</p>
-</div>
-<div class="listingblock">
-<div class="title">build.gradle</div>
-<div class="content">
-<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">task provision {
-    doLast {
-        // provisioning code
-    }
-}
-
-task deploy {
-    mustRunAfter provision
-    doLast {
-        // deployment code
-    }
-}
-
-task all {
-    dependsOn provision, deploy
-}</code></pre>
-</div>
-</div>
-<div class="listingblock">
-<div class="title">build.gradle</div>
-<div class="content">
-<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">task provision {
-    doLast {
-        // provisioning code
-    }
-}
-
-task deploy {
-    doLast {
-        // deployment code
-    }
-}
-
-task all {
-}
-
-deploy.mustRunAfter provision
-all.dependsOn provision, deploy</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Note that the same technique works for any task metadata, for example:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">deploy.finalizedBy clean</code></pre>
-</div>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_task_references"><a class="link" href="#_task_references">Task References</a></h3>
-<div class="paragraph">
-<p>In the previous examples, we used task names to reference them in <code>dependsOn</code>,
-<code>mustRunAfter</code>, or <code>finalizedBy</code>. There are many potential cases when you need
-to reference a task before its definition, for example:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">task all {
-    dependsOn provision, deploy <i class="conum" data-value="1"></i><b>(1)</b>
-}
-
-task provision { }
-
-task deploy { }</code></pre>
 </div>
 </div>
 <div class="colist arabic">
 <table>
 <tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>Attempt to reference tasks before they defined</td>
+<td>Use the <code>MY_HOST</code> environment variable, or <code>127.0.0.1</code> as a default value
+using Groovy
+<a href="http://mrhaki.blogspot.com/2009/08/groovy-goodness-elvis-operator.html">Elvis</a> operator for that</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Use the <code>MY_USER</code> environment variable, or current user from <code>USER</code>
+environment variable, which is set in the most environments</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>Use the parameters for a task definition</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>Use the parameters for a task execution</td>
 </tr>
 </table>
 </div>
 <div class="paragraph">
-<p>Using the <code>all</code> task will fail:</p>
+<p>In the example, we define the <code>checkConnection</code> task, which uses two
+environment variables with default values. To change the target host for the
+task define <code>MY_HOST</code> environment variable:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre>$ gradle all
-FAILURE: Build failed with an exception.
-...
-* What went wrong:
-A problem occurred evaluating root project 'gradle'.
-&gt; Could not find property 'provision' on task ':all'.
-...</pre>
+<pre>$ MY_HOST="192.168.1.1" gradle checkConnection
+:checkConnection
+Checking connection to paul@192.168.1.1 ...
+
+BUILD SUCCESSFUL</pre>
 </div>
 </div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_system_properties"><a class="link" href="#_system_properties">System properties</a></h2>
+<div class="sectionbody">
 <div class="paragraph">
-<p>If you still want to reference tasks before defining them, then you can use
-strings for <code>dependsOn</code>, <code>mustRunAfter</code>, or <code>finalizedBy</code>:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">task all {
-    dependsOn "provision", "deploy"
-}
-
-task provision { }
-
-task deploy { }</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Another option is to add references to the task after defining the referenced
-tasks:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">task all { }
-
-task provision { }
-
-task deploy { }
-
-all.dependsOn provision, deploy</code></pre>
-</div>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_task_group_and_description"><a class="link" href="#_task_group_and_description">Task Group and Description</a></h3>
-<div class="paragraph">
-<p>Gradle allows documenting tasks by specifying task group and description. For
-example:</p>
+<p>With the <code>-D</code> command line option you can pass a system property to the JVM
+which runs Gradle. The <code>-D</code> option of the gradle command has the same effect as
+the <code>-D</code> option of the <code>java</code> command. For example:</p>
 </div>
 <div class="listingblock">
 <div class="title">build.gradle</div>
 <div class="content">
-<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">task provision {
-    group "ops"
-    description "Provisions the execution environment"
-    doLast {
-        // provisioning code
-    }
-}
+<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">String host = System.properties.getProperty("myscript.host", "127.0.0.1")   <i class="conum" data-value="1"></i><b>(1)</b>
+String user = System.properties.getProperty("myscript.user", "root")        <i class="conum" data-value="2"></i><b>(2)</b>
 
-task deploy {
-    group "ops"
-    description "Deploys the application"
-    mustRunAfter provision
+task checkConnection {
+    description "Checks connection to ${host}"                  <i class="conum" data-value="3"></i><b>(3)</b>
     doLast {
-        // deployment code
+        println "Checking connection to ${user}@${host} ..."    <i class="conum" data-value="4"></i><b>(4)</b>
+    }
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Use the <code>myscript.host</code> Java property, or <code>127.0.0.1</code> as a default value</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Use the <code>myscript.user</code> Java property, or <code>root</code> as a default value</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>Use the parameters for a task definition</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>Use the parameters for a task execution</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>$ gradle checkConnection -Dmyscript.host="192.168.1.1"
+:checkConnection
+Checking connection to root@192.168.1.1 ...
+
+BUILD SUCCESSFUL</pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_project_properties"><a class="link" href="#_project_properties">Project Properties</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Using Gradle project properties is probably is the most convenient way to
+configure your project. For example, you can use a property directly in your
+task definition:</p>
+</div>
+<div class="listingblock">
+<div class="title">build.gradle</div>
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">task checkConnection {
+    description "Checks connection to ${host}"
+    doLast {
+        println "Checking connection to ${host} ..."
     }
 }</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>You can use <code>gradle tasks</code> to display task, which are available in your Gradle
-build:</p>
+<p>Using this <code>build.gradle</code> file without setting the <code>host</code> property results in
+build error:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="prettyprint highlight"><code>$ gradle tasks
-...
-Ops tasks
----------
-deploy - Deploys the application
-provision - Provisions the execution environment
-...</code></pre>
+<pre>$ gradle checkConnection
+
+FAILURE: Build failed with an exception.
+
+* Where:
+Build file 'build.gradle' line: 2
+
+* What went wrong:
+A problem occurred evaluating root project 'gradle'.
+&gt; Could not get unknown property 'host' for task ':checkConnection' of type org.gradle.api.DefaultTask.
+
+BUILD FAILED</pre>
 </div>
 </div>
 <div class="paragraph">
-<p>Running <code>gradle help --task &lt;task&gt;</code> gives you detailed information about a
-specific task or multiple tasks matching the given task name:</p>
+<p>There are several ways to set a project property:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Using the <code>-P</code> command line argument</p>
+</li>
+<li>
+<p>Using environment variables or system properties</p>
+</li>
+<li>
+<p>Directly in the build file</p>
+</li>
+<li>
+<p>In the external file</p>
+</li>
+</ul>
+</div>
+<div class="sect2">
+<h3 id="_project_properties_in_the_command_line"><a class="link" href="#_project_properties_in_the_command_line">Project Properties in the Command Line</a></h3>
+<div class="paragraph">
+<p>The simplest way to set a project property is using the <code>-P</code> command line
+option for <code>gradle</code>. For example:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="prettyprint highlight"><code>$ gradle help --task deploy
-...
-Detailed task information for deploy
+<pre>$ gradle checkConnection -Phost=127.0.0.1
+:checkConnection
+Checking connection to 127.0.0.1 ...
 
-Path
-     :deploy
+BUILD SUCCESSFUL</pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_project_properties_in_the_build_file"><a class="link" href="#_project_properties_in_the_build_file">Project Properties in the Build File</a></h3>
+<div class="paragraph">
+<p>You can use <code>ext</code> to set project properties directly in the build file:</p>
+</div>
+<div class="listingblock">
+<div class="title">build.gradle</div>
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">ext.host = "127.0.0.1"
 
-Type
-     Task (org.gradle.api.Task)
+task checkConnection {
+    description "Checks connection to ${host}"
+    doLast {
+        println "Checking connection to ${host} ..."
+    }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Now you can use the build file without setting the <code>host</code> property in the
+command line:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>$ gradle checkConnection
+:checkConnection
+Checking connection to 127.0.0.1 ...
 
-Description
-     Deploys the application
+BUILD SUCCESSFUL</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>There is an alternative syntax setting a property using <code>ext</code> (useful when
+setting several properties):</p>
+</div>
+<div class="listingblock">
+<div class="title">build.gradle</div>
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">ext {
+    host = "127.0.0.1"
+    user = "root"
+}
 
-Group
-     ops
-...</code></pre>
+task checkConnection {
+    description "Checks connection to ${host}"
+    doLast {
+        println "Checking connection to ${user}@${host} ..."
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_project_properties_in_environment_variables_or_system_properties"><a class="link" href="#_project_properties_in_environment_variables_or_system_properties">Project Properties in Environment Variables or System Properties</a></h3>
+<div class="paragraph">
+<p>When Gradle looks for a property, for example <code>prop</code>, it takes its value from:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Environment variable <code>ORG_GRADLE_PROJECT_prop</code>, if it is set</p>
+</li>
+<li>
+<p>System property <code>org.gradle.project.prop</code>, if it is set</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>For example:</p>
+</div>
+<div class="listingblock">
+<div class="title">build.gradle</div>
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">task checkConnection {
+    description "Checks connection to ${host}:${port}"
+    doLast {
+        println "Checking connection to ${user}@${host}:${port} ..."
+    }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Now let&#8217;s set <code>user</code>, <code>host</code>, <code>port</code> properties using different ways:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>$ export ORG_GRADLE_PROJECT_user=root       <i class="conum" data-value="1"></i><b>(1)</b>
+$ gradle checkConnection  \
+         -Phost=127.0.0.1 \                 <i class="conum" data-value="2"></i><b>(2)</b>
+         -Dorg.gradle.project.port=8080     <i class="conum" data-value="3"></i><b>(3)</b>
+:checkConnection
+Checking connection to root@127.0.0.1:8080 ...
+
+BUILD SUCCESSFUL</pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Set the <code>user</code> property using the environment variable</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Set the <code>host</code> property using the <code>-P</code> command line option</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>Set the <code>port</code> property using Java system property (<code>-D</code> command line option)</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_project_properties_in_gradle_properties"><a class="link" href="#_project_properties_in_gradle_properties">Project Properties in gradle.properties</a></h3>
+<div class="paragraph">
+<p>It is a good idea to have an external file with all the available project
+properties and reasonable default values for you build file.</p>
+</div>
+<div class="paragraph">
+<p>You can set project properties in the <code>gradle.properties</code> file, that can be
+located in the your project directory or in the <code>~/.gradle/</code> directory. You can
+also set system properties (using the <code>systemProp.</code> prefix) in the same file.
+Later, you can edit the <code>gradle.properties</code> file or overwrite a specific
+property using the <code>-P</code> (or <code>-D</code>) command line option. For example, for the
+<code>build.gradle</code> file from the last example, you can create the
+<code>gradle.properties</code> file in the same directory:</p>
+</div>
+<div class="listingblock">
+<div class="title">gradle.properties</div>
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-properties" data-lang="properties">user = root
+host = 127.0.0.1
+port = 8080
+systemProp.protocol = http      <i class="conum" data-value="1"></i><b>(1)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Set Java system property <code>protocol</code></td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>When you need to use the <code>checkConnection</code> task for a different host, you can
+set the <code>host</code> property using the <code>-P</code> command line option:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>$ gradle checkConnection -Phost=192.168.1.1
+:checkConnection
+Checking connection to root@192.168.1.1:8080 ...
+
+BUILD SUCCESSFUL</pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_project_properties_in_the_external_file"><a class="link" href="#_project_properties_in_the_external_file">Project Properties in the External File</a></h3>
+<div class="paragraph">
+<p>There are other ways to set project properties in the external file. For
+example, you can use the
+<a href="https://github.com/mwiktorczyk/gradle-properties-yaml-plugin">Gradle
+Properties YAML plugin</a>. The other option is to create a new gradle file,
+define project properties there and include it to the main build file. For
+example:</p>
+</div>
+<div class="listingblock">
+<div class="title">conf.gradle</div>
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">ext {
+    host = "127.0.0.1"
+    user = "root"
+    port = 8080
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">build.gradle</div>
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">apply from: "conf.gradle"
+
+task checkConnection {
+    description "Checks connection to ${host}:${port}"
+    doLast {
+        println "Checking connection to ${user}@${host}:${port} ..."
+    }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This method is actually the same as defining project properties directly in the
+build file, but allows you to keep all the properties and their default values
+in one place. Another advantage is that you can use the existing properties to
+construct new properties. For example:</p>
+</div>
+<div class="listingblock">
+<div class="title">conf.gradle</div>
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">ext {
+    host = "127.0.0.1"
+    user = "root"
+    port = 8080
+    url = "${user}@${host}:${port}"
+}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_resolution_rules"><a class="link" href="#_resolution_rules">Resolution Rules</a></h3>
+<div class="paragraph">
+<p>Gradle looks for a property in the following order:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>The <code>ext</code> block inside the build file (or in any file included using <code>apply from</code>)</p>
+</li>
+<li>
+<p>Command line (property defined using the <code>-P</code>, <code>-D</code> command line options, or environment variables)</p>
+</li>
+<li>
+<p>The file <code>~/.gradle/gradle.properties</code> (those properties are available to all projects)</p>
+</li>
+<li>
+<p>The file <code>gradle.properties</code> in the same directory as the build file</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Therefore, a property defined, for example, in the <code>gradle.properties</code> file
+will be overwritten with a property defined using the <code>-P</code> command line option,
+or with a property defined in the build file using the <code>ext</code> block.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_default_values"><a class="link" href="#_default_values">Default Values</a></h3>
+<div class="paragraph">
+<p>As we already mentioned, if you define a property in the <code>gradle.properties</code>
+file, then you can overwrite its value using the <code>-P</code> command line option. From
+this perspective, you can use <code>gradle.properties</code> to list all available
+properties and to set their default values.</p>
+</div>
+<div class="paragraph">
+<p>Another option is to set a default value directly in the build file. You can
+use <code>project.hasProperty()</code> for this. For example:</p>
+</div>
+<div class="listingblock">
+<div class="title">build.gradle</div>
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">ext {
+    host = project.hasProperty("host") ? host : "127.0.0.1" <i class="conum" data-value="1"></i><b>(1)</b>
+    user = project.hasProperty("user") ? user : "root"      <i class="conum" data-value="2"></i><b>(2)</b>
+    port = project.hasProperty("port") ? port : 8080        <i class="conum" data-value="3"></i><b>(3)</b>
+}
+
+task checkConnection {
+    description "Checks connection to ${host}:${port}"
+    doLast {
+        println "Checking connection to ${user}@${host}:${port} ..."
+    }
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Use the specified <code>host</code> property, or <code>127.0.0.1</code> as the default value</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Use the specified <code>user</code> property, or <code>root</code> as the default value</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>Use the specified <code>port</code> property, or <code>8080</code> as the default value</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Now you can use the build file with the default values:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>$ gradle checkConnection
+:checkConnection
+Checking connection to root@127.0.0.1:8080 ...
+
+BUILD SUCCESSFUL</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Or explicitly set a specific property:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>$ gradle checkConnection -Phost=192.168.1.1
+:checkConnection
+Checking connection to root@192.168.1.1:8080 ...
+
+BUILD SUCCESSFUL</pre>
 </div>
 </div>
 </div>
@@ -1098,7 +940,10 @@ Group
 <div class="ulist">
 <ul>
 <li>
-<p><a href="gradle-for-devops-2.html">Gradle for DevOps, Part 2</a></p>
+<p><a href="gradle-for-devops-1.html">Gradle for DevOps, Part 1</a></p>
+</li>
+<li>
+<p><a href="http://andresalmiray.com/newsletter/issue001/">Gradle project properties</a></p>
 </li>
 </ul>
 </div>
