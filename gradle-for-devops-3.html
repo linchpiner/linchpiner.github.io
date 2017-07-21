@@ -5,7 +5,7 @@
 <!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 1.5.6">
-<title>Gradle for DevOps, Part 2</title>
+<title>Gradle for DevOps, Part 3</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
 /* Asciidoctor default stylesheet | MIT License | http://asciidoctor.org */
@@ -439,40 +439,41 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </head>
 <body class="article">
 <div id="header">
-<h1>Gradle for DevOps, Part 2</h1>
+<h1>Gradle for DevOps, Part 3</h1>
 </div>
 <div id="content">
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>In the <a href="gradle-for-devops-1.html">first part</a>, we discussed several features
-of Gradle, a popular open source build tool, that allow using it in a DevOps
-word. Specifically, Gradle&#8217;s task-based approach can be used for general
-operations, such as provisioning or deployment. In this part, we will discuss
-how to set and use parameters in your Groovy project.</p>
+<p>In the <a href="gradle-for-devops-1.html">first</a> and
+<a href="gradle-for-devops-2.html">second</a> parts we learned how to use
+<a href="https://gradle.org/">Gradle</a> as a DevOps "glue" for your existing tools and
+various scripts. Specifically, you can use Gradle to structure your DevOps
+logic into tasks and their dependencies. Also we learned how to set parameters
+for these these tasks. In this part, we will discuss how to do actual stuff:
+execute commands locally and remotely, call external scripts and tools.</p>
+</div>
+<div class="paragraph">
+<p>Although Grade is initially designed to work with local files - as a build tool
+it needs to identify changed inputs and update outputs respectively - it also
+can be used to control remote systems.</p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_environment_variables"><a class="link" href="#_environment_variables">Environment Variables</a></h2>
+<h2 id="_local_operations"><a class="link" href="#_local_operations">Local Operations</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>A standard way to configure any script is to use environment variables.  You
-can use the same approach for Gradle build file. You can use the
-<code>java.lang.System</code> class for that. The <code>java.lang</code> package is imported by
-default in the Gradle build file, so you can use <code>System</code> directly. For
+<p>The simplest way to execute a local script or executable binary is using the
+<code>execute()</code> method that Groovy adds to the <code>String</code> and <code>List</code> classes. For
 example:</p>
 </div>
 <div class="listingblock">
 <div class="title">build.gradle</div>
 <div class="content">
-<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">String host = System.getenv("MY_HOST") ?: "127.0.0.1"           <i class="conum" data-value="1"></i><b>(1)</b>
-String user = System.getenv("MY_USER") ?: System.getenv("USER") <i class="conum" data-value="2"></i><b>(2)</b>
-
-task checkConnection {
-    description "Checks connection to ${host}"                  <i class="conum" data-value="3"></i><b>(3)</b>
+<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">task provision {
     doLast {
-        println "Checking connection to ${user}@${host} ..."    <i class="conum" data-value="4"></i><b>(4)</b>
+        "./provision.sh ${server}".execute()    <i class="conum" data-value="1"></i><b>(1)</b>
     }
 }</code></pre>
 </div>
@@ -481,59 +482,99 @@ task checkConnection {
 <table>
 <tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>Use the <code>MY_HOST</code> environment variable, or <code>127.0.0.1</code> as a default value
-using Groovy
-<a href="http://mrhaki.blogspot.com/2009/08/groovy-goodness-elvis-operator.html">Elvis</a> operator for that</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="2"></i><b>2</b></td>
-<td>Use the <code>MY_USER</code> environment variable, or current user from <code>USER</code>
-environment variable, which is set in the most environments</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="3"></i><b>3</b></td>
-<td>Use the parameters for a task definition</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="4"></i><b>4</b></td>
-<td>Use the parameters for a task execution</td>
+<td>In Groovy, you can call <code>execute()</code> for any String. Alternatively, you can
+use <code>execute</code> for a List: <code>["./provision.sh", server].execute()</code></td>
 </tr>
 </table>
 </div>
 <div class="paragraph">
-<p>In the example, we define the <code>checkConnection</code> task, which uses two
-environment variables with default values. To change the target host for the
-task define <code>MY_HOST</code> environment variable:</p>
+<p>In the example above, we execute the local script <code>provision.sh</code> that is
+located in the same directory with the Gradle build file. The <code>execute()</code>
+method returns an instance of the
+<a href="http://docs.groovy-lang.org/docs/latest/html/groovy-jdk/java/lang/Process.html"><code>Process</code></a>
+class, so you can use its methods such as <code>waitFor()</code> (waits for the process to
+terminate), <code>exitValue()</code> (returns the exit value for the process) or
+<code>getText()</code> (returns the standard output from the process as a string):</p>
 </div>
 <div class="listingblock">
+<div class="title">build.gradle</div>
 <div class="content">
-<pre>$ MY_HOST="192.168.1.1" gradle checkConnection
-:checkConnection
-Checking connection to paul@192.168.1.1 ...
-
-BUILD SUCCESSFUL</pre>
+<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">task provision {
+    doLast {
+        def process = "./provision.sh ${server}".execute()
+        process.waitFor()
+        println process.text
+        if (process.exitValue()) {
+            throw new GradleException("./provision.sh returned ${process.exitValue()}")
+        }
+    }
+}</code></pre>
 </div>
+</div>
+<div class="paragraph">
+<p>Alternatively, you can use the built-in
+<a href="https://docs.gradle.org/4.0/dsl/org.gradle.api.tasks.Exec.html"><code>Exec</code></a> task in Gradle:</p>
+</div>
+<div class="listingblock">
+<div class="title">build.gradle</div>
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">task provision(type: Exec) {
+    commandLine "./provision.sh"
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Gradle has other built-in tasks, such as
+<a href="https://docs.gradle.org/4.0/dsl/org.gradle.api.tasks.Copy.html"><code>Copy</code></a>,
+<a href="https://docs.gradle.org/4.0/dsl/org.gradle.api.tasks.Delete.html"><code>Delete</code></a>,
+<a href="https://docs.gradle.org/4.0/dsl/org.gradle.api.tasks.Sync.html"><code>Sync</code></a>,
+<a href="https://docs.gradle.org/4.0/dsl/org.gradle.api.tasks.bundling.Zip.html"><code>Zip</code></a>,
+and so on</p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_system_properties"><a class="link" href="#_system_properties">System properties</a></h2>
+<h2 id="_remote_operations"><a class="link" href="#_remote_operations">Remote Operations</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>With the <code>-D</code> command line option you can pass a system property to the JVM
-which runs Gradle. The <code>-D</code> option of the gradle command has the same effect as
-the <code>-D</code> option of the <code>java</code> command. For example:</p>
+<p>For remote operations, Gradle is perfect for systems that have remote APIs with corresponding Java libraries or bindings.
+For example, you can use <a href="https://github.com/classmethod/gradle-aws-plugin">Gradle AWS Plugin</a> to manage AWS resources.
+<a href="https://gradle-ssh-plugin.github.io/">Gradle SSH Plugin</a> is the perfect tool for general purpose operations on remote servers.
+It support parallel operations, local and remote
+<a href="https://gradle-ssh-plugin.github.io/docs/#_enable_the_port_forwarding">port forwarding</a>,
+and
+<a href="https://gradle-ssh-plugin.github.io/docs/#_gateway_access">ssh gateways</a>
+to connect to a remote server through one or more gateway servers.</p>
+</div>
+<div class="paragraph">
+<p>Let&#8217;s implement a simple Gradle task to show server uptime:</p>
 </div>
 <div class="listingblock">
 <div class="title">build.gradle</div>
 <div class="content">
-<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">String host = System.properties.getProperty("myscript.host", "127.0.0.1")   <i class="conum" data-value="1"></i><b>(1)</b>
-String user = System.properties.getProperty("myscript.user", "root")        <i class="conum" data-value="2"></i><b>(2)</b>
+<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">plugins {
+    id 'org.hidetake.ssh' version '2.9.0'   <i class="conum" data-value="1"></i><b>(1)</b>
+}
 
-task checkConnection {
-    description "Checks connection to ${host}"                  <i class="conum" data-value="3"></i><b>(3)</b>
+ssh.settings {
+    knownHosts = allowAnyHosts              <i class="conum" data-value="2"></i><b>(2)</b>
+}
+
+remotes {
+    node {                                  <i class="conum" data-value="3"></i><b>(3)</b>
+        host = '192.168.1.101'
+        user = 'ubuntu'
+        password = 'ubuntu'
+    }
+}
+
+task nodeUptime {
     doLast {
-        println "Checking connection to ${user}@${host} ..."    <i class="conum" data-value="4"></i><b>(4)</b>
+        ssh.run {
+            session(remotes.node) {
+                execute "uptime"            <i class="conum" data-value="4"></i><b>(4)</b>
+            }
+        }
     }
 }</code></pre>
 </div>
@@ -542,369 +583,214 @@ task checkConnection {
 <table>
 <tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>Use the <code>myscript.host</code> Java property, or <code>127.0.0.1</code> as a default value</td>
+<td>Add the Gradle SSH plugin to your script (Gradle will download all required dependencies)</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="2"></i><b>2</b></td>
-<td>Use the <code>myscript.user</code> Java property, or <code>root</code> as a default value</td>
+<td>Accept keys for all host</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="3"></i><b>3</b></td>
-<td>Use the parameters for a task definition</td>
+<td>Set SSH connection parameters</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="4"></i><b>4</b></td>
-<td>Use the parameters for a task execution</td>
+<td>Execute <code>uptime</code> on the remote server</td>
 </tr>
 </table>
 </div>
-<div class="listingblock">
-<div class="content">
-<pre>$ gradle checkConnection -Dmyscript.host="192.168.1.1"
-:checkConnection
-Checking connection to root@192.168.1.1 ...
-
-BUILD SUCCESSFUL</pre>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_project_properties"><a class="link" href="#_project_properties">Project Properties</a></h2>
-<div class="sectionbody">
 <div class="paragraph">
-<p>Using Gradle project properties is probably is the most convenient way to
-configure your project. For example, you can use a property directly in your
-task definition:</p>
-</div>
-<div class="listingblock">
-<div class="title">build.gradle</div>
-<div class="content">
-<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">task checkConnection {
-    description "Checks connection to ${host}"
-    doLast {
-        println "Checking connection to ${host} ..."
-    }
-}</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Using this <code>build.gradle</code> file without setting the <code>host</code> property results in
-build error:</p>
+<p>You can use the task <code>nodeUptime</code> to show server uptime:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre>$ gradle checkConnection
+<pre>$ gradle nodeUptime
+:nodeUptime
+Host key checking is off. It may be vulnerable to man-in-the-middle attacks.
+node#1| 20:37:53 up 119 days, 10:21,  0 users,  load average: 0.10, 0.23, 0.47
 
-FAILURE: Build failed with an exception.
-
-* Where:
-Build file 'build.gradle' line: 2
-
-* What went wrong:
-A problem occurred evaluating root project 'gradle'.
-&gt; Could not get unknown property 'host' for task ':checkConnection' of type org.gradle.api.DefaultTask.
-
-BUILD FAILED</pre>
+BUILD SUCCESSFUL in 1s
+1 actionable task: 1 executed</pre>
 </div>
 </div>
 <div class="paragraph">
-<p>There are several ways to set a project property:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Using the <code>-P</code> command line argument</p>
-</li>
-<li>
-<p>Using environment variables or system properties</p>
-</li>
-<li>
-<p>Directly in the build file</p>
-</li>
-<li>
-<p>In the external file</p>
-</li>
-</ul>
-</div>
-<div class="sect2">
-<h3 id="_project_properties_in_the_command_line"><a class="link" href="#_project_properties_in_the_command_line">Project Properties in the Command Line</a></h3>
-<div class="paragraph">
-<p>The simplest way to set a project property is using the <code>-P</code> command line
-option for <code>gradle</code>. For example:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre>$ gradle checkConnection -Phost=127.0.0.1
-:checkConnection
-Checking connection to 127.0.0.1 ...
-
-BUILD SUCCESSFUL</pre>
-</div>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_project_properties_in_the_build_file"><a class="link" href="#_project_properties_in_the_build_file">Project Properties in the Build File</a></h3>
-<div class="paragraph">
-<p>You can use <code>ext</code> to set project properties directly in the build file:</p>
+<p>If you have multiple servers, then you may want to implement similar task for each server.
+Let&#8217;s start from defining connection parameters for each node:</p>
 </div>
 <div class="listingblock">
 <div class="title">build.gradle</div>
 <div class="content">
-<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">ext.host = "127.0.0.1"
-
-task checkConnection {
-    description "Checks connection to ${host}"
-    doLast {
-        println "Checking connection to ${host} ..."
-    }
-}</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Now you can use the build file without setting the <code>host</code> property in the
-command line:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre>$ gradle checkConnection
-:checkConnection
-Checking connection to 127.0.0.1 ...
-
-BUILD SUCCESSFUL</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>There is an alternative syntax setting a property using <code>ext</code> (useful when
-setting several properties):</p>
-</div>
-<div class="listingblock">
-<div class="title">build.gradle</div>
-<div class="content">
-<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">ext {
-    host = "127.0.0.1"
-    user = "root"
+<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">plugins {
+    id 'org.hidetake.ssh' version '2.9.0'
 }
 
-task checkConnection {
-    description "Checks connection to ${host}"
-    doLast {
-        println "Checking connection to ${user}@${host} ..."
-    }
-}</code></pre>
-</div>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_project_properties_in_environment_variables_or_system_properties"><a class="link" href="#_project_properties_in_environment_variables_or_system_properties">Project Properties in Environment Variables or System Properties</a></h3>
-<div class="paragraph">
-<p>When Gradle looks for a property, for example <code>prop</code>, it takes its value from:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Environment variable <code>ORG_GRADLE_PROJECT_prop</code>, if it is set</p>
-</li>
-<li>
-<p>System property <code>org.gradle.project.prop</code>, if it is set</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p>For example:</p>
-</div>
-<div class="listingblock">
-<div class="title">build.gradle</div>
-<div class="content">
-<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">task checkConnection {
-    description "Checks connection to ${host}:${port}"
-    doLast {
-        println "Checking connection to ${user}@${host}:${port} ..."
-    }
-}</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Now let&#8217;s set <code>user</code>, <code>host</code>, <code>port</code> properties using different ways:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre>$ export ORG_GRADLE_PROJECT_user=root       <i class="conum" data-value="1"></i><b>(1)</b>
-$ gradle checkConnection  \
-         -Phost=127.0.0.1 \                 <i class="conum" data-value="2"></i><b>(2)</b>
-         -Dorg.gradle.project.port=8080     <i class="conum" data-value="3"></i><b>(3)</b>
-:checkConnection
-Checking connection to root@127.0.0.1:8080 ...
+ssh.settings {
+    knownHosts = allowAnyHosts
+}
 
-BUILD SUCCESSFUL</pre>
+remotes {
+    node1 {
+        host = '192.168.1.1'
+        user = 'ubuntu'
+        password = 'ubuntu'
+    }
+    node2 {
+        host = '192.168.1.2'
+        user = 'ubuntu'
+        password = 'ubuntu'
+    }
+
+    ...
+
+    node10 {
+        host = '192.168.1.10'
+        user = 'ubuntu'
+        password = 'ubuntu'
+    }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Instead of defining similar task manually for each node (we have 100 nodes!), let&#8217;s write a simple Groovy code that generates 100 tasks.
+The previous example continues:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">remotes.each { remote -&gt;                                        <i class="conum" data-value="1"></i><b>(1)</b>
+    task "${remote.name}Uptime" {                               <i class="conum" data-value="2"></i><b>(2)</b>
+        description "Shows uptime for server ${remote.name}"    <i class="conum" data-value="3"></i><b>(3)</b>
+        doLast {
+            ssh.run {
+                session(remote) {
+                    execute "uptime"                            <i class="conum" data-value="4"></i><b>(4)</b>
+                }
+            }
+        }
+    }
+}</code></pre>
 </div>
 </div>
 <div class="colist arabic">
 <table>
 <tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>Set the <code>user</code> property using the environment variable</td>
+<td>Iterate through defined servers</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="2"></i><b>2</b></td>
-<td>Set the <code>host</code> property using the <code>-P</code> command line option</td>
+<td>Define a new task, using a server name</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="3"></i><b>3</b></td>
-<td>Set the <code>port</code> property using Java system property (<code>-D</code> command line option)</td>
+<td>Set a task description, using a server name</td>
 </tr>
-</table>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_project_properties_in_gradle_properties"><a class="link" href="#_project_properties_in_gradle_properties">Project Properties in gradle.properties</a></h3>
-<div class="paragraph">
-<p>It is a good idea to have an external file with all the available project
-properties and reasonable default values for you build file.</p>
-</div>
-<div class="paragraph">
-<p>You can set project properties in the <code>gradle.properties</code> file, that can be
-located in the your project directory or in the <code>~/.gradle/</code> directory. You can
-also set system properties (using the <code>systemProp.</code> prefix) in the same file.
-Later, you can edit the <code>gradle.properties</code> file or overwrite a specific
-property using the <code>-P</code> (or <code>-D</code>) command line option. For example, for the
-<code>build.gradle</code> file from the last example, you can create the
-<code>gradle.properties</code> file in the same directory:</p>
-</div>
-<div class="listingblock">
-<div class="title">gradle.properties</div>
-<div class="content">
-<pre class="prettyprint highlight"><code class="language-properties" data-lang="properties">user = root
-host = 127.0.0.1
-port = 8080
-systemProp.protocol = http      <i class="conum" data-value="1"></i><b>(1)</b></code></pre>
-</div>
-</div>
-<div class="colist arabic">
-<table>
 <tr>
-<td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>Set Java system property <code>protocol</code></td>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>Execute <code>uptime</code> on a remote server</td>
 </tr>
 </table>
 </div>
 <div class="paragraph">
-<p>When you need to use the <code>checkConnection</code> task for a different host, you can
-set the <code>host</code> property using the <code>-P</code> command line option:</p>
+<p>Let&#8217;s check that our script contains the tasks:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre>$ gradle checkConnection -Phost=192.168.1.1
-:checkConnection
-Checking connection to root@192.168.1.1:8080 ...
+<pre>$ gradle tasks --all
+:tasks
 
-BUILD SUCCESSFUL</pre>
+------------------------------------------------------------
+All tasks runnable from root project
+------------------------------------------------------------
+
+...
+
+Other tasks
+-----------
+node1Uptime - Shows uptime for server node1
+...
+node10Uptime - Shows uptime for server node10
+
+BUILD SUCCESSFUL in 0s
+1 actionable task: 1 executed</pre>
 </div>
 </div>
-</div>
-<div class="sect2">
-<h3 id="_project_properties_in_the_external_file"><a class="link" href="#_project_properties_in_the_external_file">Project Properties in the External File</a></h3>
 <div class="paragraph">
-<p>There are other ways to set project properties in the external file. For
-example, you can use the
-<a href="https://github.com/mwiktorczyk/gradle-properties-yaml-plugin">Gradle
-Properties YAML plugin</a>. The other option is to create a new gradle file,
-define project properties there and include it to the main build file. For
-example:</p>
+<p>For this specific example, where all the hosts are similar, you can also use Groovy code to generate hosts definitions.
+The following code generates the same definitions of the nodes from the previous example:</p>
 </div>
 <div class="listingblock">
-<div class="title">conf.gradle</div>
 <div class="content">
-<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">ext {
-    host = "127.0.0.1"
-    user = "root"
-    port = 8080
-}</code></pre>
-</div>
-</div>
-<div class="listingblock">
-<div class="title">build.gradle</div>
-<div class="content">
-<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">apply from: "conf.gradle"
-
-task checkConnection {
-    description "Checks connection to ${host}:${port}"
-    doLast {
-        println "Checking connection to ${user}@${host}:${port} ..."
+<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">remotes {
+    (1..10).each { n -&gt;
+        "node${n}" {
+            host = "192.168.1.${n}"
+            user = "ubuntu"
+            password = "ubuntu"
+        }
     }
 }</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>This method is actually the same as defining project properties directly in the
-build file, but allows you to keep all the properties and their default values
-in one place. Another advantage is that you can use the existing properties to
-construct new properties. For example:</p>
+<p>You can use these tasks to show uptime for specific servers:</p>
 </div>
 <div class="listingblock">
-<div class="title">conf.gradle</div>
 <div class="content">
-<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">ext {
-    host = "127.0.0.1"
-    user = "root"
-    port = 8080
-    url = "${user}@${host}:${port}"
+<pre>$ gradle node1Uptime node2Uptime
+...
+:node1Uptime
+node1#1| 20:37:53 up 119 days, 10:21,  0 users,  load average: 0.10, 0.23, 0.47
+:node2Uptime
+node2#1| 20:37:53 up 119 days, 10:21,  0 users,  load average: 0.11, 0.25, 0.51
+..</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If you need to check uptime for all of the servers, then you can define a task that depends on each individual task:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">task nodesUptime {
+    description "Shows uptime for all servers"
+    remotes.each { remote -&gt;
+        dependsOn "${remote.name}Uptime"
+    }
 }</code></pre>
 </div>
 </div>
+<div class="listingblock">
+<div class="content">
+<pre>$ gradle nodesUptime
+...
+:node1Uptime
+node1#1| 20:37:53 up 119 days, 10:21,  0 users,  load average: 0.10, 0.23, 0.47
+:node2Uptime
+node2#1| 20:37:53 up 119 days, 10:21,  0 users,  load average: 0.11, 0.25, 0.51
+...
+BUILD SUCCESSFUL in 10s
+10 actionable tasks: 10 executed</pre>
 </div>
-<div class="sect2">
-<h3 id="_resolution_rules"><a class="link" href="#_resolution_rules">Resolution Rules</a></h3>
-<div class="paragraph">
-<p>Gradle looks for a property in the following order:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>The <code>ext</code> block inside the build file (or in any file included using <code>apply from</code>)</p>
-</li>
-<li>
-<p>Command line (property defined using the <code>-P</code>, <code>-D</code> command line options, or environment variables)</p>
-</li>
-<li>
-<p>The file <code>~/.gradle/gradle.properties</code> (those properties are available to all projects)</p>
-</li>
-<li>
-<p>The file <code>gradle.properties</code> in the same directory as the build file</p>
-</li>
-</ul>
 </div>
 <div class="paragraph">
-<p>Therefore, a property defined, for example, in the <code>gradle.properties</code> file
-will be overwritten with a property defined using the <code>-P</code> command line option,
-or with a property defined in the build file using the <code>ext</code> block.</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_default_values"><a class="link" href="#_default_values">Default Values</a></h3>
-<div class="paragraph">
-<p>As we already mentioned, if you define a property in the <code>gradle.properties</code>
-file, then you can overwrite its value using the <code>-P</code> command line option. From
-this perspective, you can use <code>gradle.properties</code> to list all available
-properties and to set their default values.</p>
-</div>
-<div class="paragraph">
-<p>Another option is to set a default value directly in the build file. You can
-use <code>project.hasProperty()</code> for this. For example:</p>
+<p>The task works, but not very efficient: it connects to one host per time.
+You can use another implementation that uses parallel SSH connections:</p>
 </div>
 <div class="listingblock">
-<div class="title">build.gradle</div>
 <div class="content">
-<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">ext {
-    host = project.hasProperty("host") ? host : "127.0.0.1" <i class="conum" data-value="1"></i><b>(1)</b>
-    user = project.hasProperty("user") ? user : "root"      <i class="conum" data-value="2"></i><b>(2)</b>
-    port = project.hasProperty("port") ? port : 8080        <i class="conum" data-value="3"></i><b>(3)</b>
-}
-
-task checkConnection {
-    description "Checks connection to ${host}:${port}"
+<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">task nodesUptime {
+    description "Shows uptime for all servers"
     doLast {
-        println "Checking connection to ${user}@${host}:${port} ..."
+        def results = ssh.run {                                         <i class="conum" data-value="1"></i><b>(1)</b>
+            remotes.each { remote -&gt;                                    <i class="conum" data-value="2"></i><b>(2)</b>
+                session(remote) {
+                    def output = execute("uptime", logging: "none")     <i class="conum" data-value="3"></i><b>(3)</b>
+                    return [name: remote.name, output: output]          <i class="conum" data-value="4"></i><b>(4)</b>
+                }
+            }
+        }
+        results.each {                                                  <i class="conum" data-value="5"></i><b>(5)</b>
+            println "${it.name}: ${it.output}"
+        }
     }
 }</code></pre>
 </div>
@@ -913,41 +799,42 @@ task checkConnection {
 <table>
 <tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>Use the specified <code>host</code> property, or <code>127.0.0.1</code> as the default value</td>
+<td>Run several SSH sessions in parallel and wait for their termination</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="2"></i><b>2</b></td>
-<td>Use the specified <code>user</code> property, or <code>root</code> as the default value</td>
+<td>Define SSH session per server</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="3"></i><b>3</b></td>
-<td>Use the specified <code>port</code> property, or <code>8080</code> as the default value</td>
+<td>Execute <code>uptime</code> on a remote server and store its output</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>Return a map with server name and uptime</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
+<td>Iterate through the map and print results</td>
 </tr>
 </table>
 </div>
 <div class="paragraph">
-<p>Now you can use the build file with the default values:</p>
+<p>Now the task works 10 times faster:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre>$ gradle checkConnection
-:checkConnection
-Checking connection to root@127.0.0.1:8080 ...
+<pre>:nodesUptime
+node1:  21:32:21 up 119 days, 11:15,  0 users,  load average: 0.15, 0.13, 0.15
+...
+node10:  21:32:21 up 119 days, 11:15,  0 users,  load average: 0.15, 0.13, 0.15
 
-BUILD SUCCESSFUL</pre>
+BUILD SUCCESSFUL in 1s
+1 actionable task: 1 executed</pre>
 </div>
 </div>
 <div class="paragraph">
-<p>Or explicitly set a specific property:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre>$ gradle checkConnection -Phost=192.168.1.1
-:checkConnection
-Checking connection to root@192.168.1.1:8080 ...
-
-BUILD SUCCESSFUL</pre>
-</div>
+<p>Of course, the same result can be easily achieved using, for example, <a href="https://www.ansible.com/">Ansible</a> or <a href="https://saltstack.com/">Salt</a>.</p>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -963,7 +850,6 @@ Gradle&#8217;s Groovy support is not deprecated, and will continue to be <a href
 </td>
 </tr>
 </table>
-</div>
 </div>
 </div>
 </div>
