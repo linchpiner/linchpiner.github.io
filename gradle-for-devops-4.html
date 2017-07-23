@@ -5,7 +5,7 @@
 <!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 1.5.6">
-<title>Gradle for DevOps, Part 3</title>
+<title>Gradle for DevOps, Part 4</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
 /* Asciidoctor default stylesheet | MIT License | http://asciidoctor.org */
@@ -439,42 +439,65 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </head>
 <body class="article">
 <div id="header">
-<h1>Gradle for DevOps, Part 3</h1>
+<h1>Gradle for DevOps, Part 4</h1>
 </div>
 <div id="content">
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>In the <a href="gradle-for-devops-1.html">first</a> and
-<a href="gradle-for-devops-2.html">second</a> parts we learned how to use
-<a href="https://gradle.org/">Gradle</a> as a DevOps "glue" for your existing tools and
-various scripts. Specifically, you can use Gradle to structure your DevOps
-logic into tasks and their dependencies. Also we learned how to set parameters
-for these these tasks. In this part, we will discuss how to do actual stuff:
-execute commands locally and remotely, call external scripts and tools.</p>
+<p>In this part, we will look closer to the Gradle build lifecycle, how Gradle configures tasks, and how to create Gradle tasks in runtime.
+Creating tasks in runtime gives you great flexibility with operations for different environments.
+Also we will discuss how to use Gradle to build a unified command line interface (CLI) for various operations.</p>
 </div>
 <div class="paragraph">
-<p>Although Grade is initially designed to work with local files - as a build tool
-it needs to identify changed inputs and update outputs respectively - it also
-can be used to control remote systems.</p>
+<p>As already discussed in the <a href="gradle-for-devops-1.html">first</a> part, in Gradle define tasks and dependencies between tasks.
+Gradle guarantees that these tasks are executed in the order of their dependencies, and that each task is executed only once.
+Gradle builds the complete dependency graph before any task is executed.
+In the <a href="gradle-for-devops-3.html">third</a> part, we used Groovy to create a dynamic task for each remote server from your configuration.
+Also, using Groovy we created a task that run SSH commands on all servers in parallel.
+Generally speaking, all tasks in a Gradle file are dynamic, because they are being created in runtime.
+For better understanding of that fact let&#8217;s begin from the Gradle build lifecycle.</p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_local_operations"><a class="link" href="#_local_operations">Local Operations</a></h2>
+<h2 id="_the_build_lifecycle"><a class="link" href="#_the_build_lifecycle">The Build Lifecycle</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>The simplest way to execute a local script or executable binary is using the
-<code>execute()</code> method that Groovy adds to the <code>String</code> and <code>List</code> classes. For
-example:</p>
+<p>A Gradle build has three distinct <a href="https://docs.gradle.org/current/userguide/build_lifecycle.html">phases</a>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Initialization:</strong> Gradle determines which projects are going to take part in the build (this is relevant for multi-project builds).</p>
+</li>
+<li>
+<p><strong>Configuration:</strong> Gradle creates project objects, including tasks.</p>
+</li>
+<li>
+<p><strong>Execution:</strong> Gradle determines the subset of the tasks, created and configured during the configuration phase, to be executed.
+The subset is determined by the task name arguments passed to the <code>gradle</code> command and the current directory.
+Gradle then executes each of the selected tasks.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>For example, let&#8217;s take a look to the following Gradle build file:</p>
 </div>
 <div class="listingblock">
 <div class="title">build.gradle</div>
 <div class="content">
-<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">task provision {
-    doLast {
-        "./provision.sh ${server}".execute()    <i class="conum" data-value="1"></i><b>(1)</b>
+<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">println 'This is executed during the configuration phase'           <i class="conum" data-value="1"></i><b>(1)</b>
+
+task testBoth {                                                     <i class="conum" data-value="2"></i><b>(2)</b>
+    println 'This is executed during the configuration phase'       <i class="conum" data-value="3"></i><b>(3)</b>
+    doFirst {                                                       <i class="conum" data-value="4"></i><b>(4)</b>
+      println 'This is executed first during the execution phase'
     }
+    doLast {
+      println 'This is executed last during the execution phase'
+    }
+    println 'This is executed during the configuration phase'
 }</code></pre>
 </div>
 </div>
@@ -482,306 +505,247 @@ example:</p>
 <table>
 <tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>In Groovy, you can call <code>execute()</code> for any String. Alternatively, you can
-use <code>execute</code> for a List: <code>["./provision.sh", server].execute()</code></td>
-</tr>
-</table>
-</div>
-<div class="paragraph">
-<p>In the example above, we execute the local script <code>provision.sh</code> that is
-located in the same directory with the Gradle build file. The <code>execute()</code>
-method returns an instance of the
-<a href="http://docs.groovy-lang.org/docs/latest/html/groovy-jdk/java/lang/Process.html"><code>Process</code></a>
-class, so you can use its methods such as <code>waitFor()</code> (waits for the process to
-terminate), <code>exitValue()</code> (returns the exit value for the process) or
-<code>getText()</code> (returns the standard output from the process as a string):</p>
-</div>
-<div class="listingblock">
-<div class="title">build.gradle</div>
-<div class="content">
-<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">task provision {
-    doLast {
-        def process = "./provision.sh ${server}".execute()
-        process.waitFor()
-        println process.text
-        if (process.exitValue()) {
-            throw new GradleException("./provision.sh returned ${process.exitValue()}")
-        }
-    }
-}</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Alternatively, you can use the built-in
-<a href="https://docs.gradle.org/4.0/dsl/org.gradle.api.tasks.Exec.html"><code>Exec</code></a> task in Gradle:</p>
-</div>
-<div class="listingblock">
-<div class="title">build.gradle</div>
-<div class="content">
-<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">task provision(type: Exec) {
-    commandLine "./provision.sh"
-}</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Gradle has other built-in tasks, such as
-<a href="https://docs.gradle.org/4.0/dsl/org.gradle.api.tasks.Copy.html"><code>Copy</code></a>,
-<a href="https://docs.gradle.org/4.0/dsl/org.gradle.api.tasks.Delete.html"><code>Delete</code></a>,
-<a href="https://docs.gradle.org/4.0/dsl/org.gradle.api.tasks.Sync.html"><code>Sync</code></a>,
-<a href="https://docs.gradle.org/4.0/dsl/org.gradle.api.tasks.bundling.Zip.html"><code>Zip</code></a>,
-and so on</p>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_remote_operations"><a class="link" href="#_remote_operations">Remote Operations</a></h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>For remote operations, Gradle is perfect for systems that have remote APIs with corresponding Java libraries or bindings.
-For example, you can use <a href="https://github.com/classmethod/gradle-aws-plugin">Gradle AWS Plugin</a> to manage AWS resources.
-<a href="https://gradle-ssh-plugin.github.io/">Gradle SSH Plugin</a> is the perfect tool for general purpose operations on remote servers.
-It support parallel operations, local and remote
-<a href="https://gradle-ssh-plugin.github.io/docs/#_enable_the_port_forwarding">port forwarding</a>,
-and
-<a href="https://gradle-ssh-plugin.github.io/docs/#_gateway_access">ssh gateways</a>
-to connect to a remote server through one or more gateway servers.</p>
-</div>
-<div class="paragraph">
-<p>Let&#8217;s implement a simple Gradle task to show server uptime:</p>
-</div>
-<div class="listingblock">
-<div class="title">build.gradle</div>
-<div class="content">
-<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">plugins {
-    id 'org.hidetake.ssh' version '2.9.0'   <i class="conum" data-value="1"></i><b>(1)</b>
-}
-
-ssh.settings {
-    knownHosts = allowAnyHosts              <i class="conum" data-value="2"></i><b>(2)</b>
-}
-
-remotes {
-    node {                                  <i class="conum" data-value="3"></i><b>(3)</b>
-        host = '192.168.1.101'
-        user = 'ubuntu'
-        password = 'ubuntu'
-    }
-}
-
-task nodeUptime {
-    doLast {
-        ssh.run {
-            session(remotes.node) {
-                execute "uptime"            <i class="conum" data-value="4"></i><b>(4)</b>
-            }
-        }
-    }
-}</code></pre>
-</div>
-</div>
-<div class="colist arabic">
-<table>
-<tr>
-<td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>Add the Gradle SSH plugin to your script (Gradle will download all required dependencies)</td>
+<td>In the configuration phase, <code>build.gradle</code> is executed as Groovy script.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="2"></i><b>2</b></td>
-<td>Accept keys for all host</td>
+<td>In the configuration phase, we actually define (create) tasks.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="3"></i><b>3</b></td>
-<td>Set SSH connection parameters</td>
+<td>Task definition is a Groovy <a href="http://groovy-lang.org/closures.html">closure</a> that is executed in the configuration phase.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="4"></i><b>4</b></td>
-<td>Execute <code>uptime</code> on the remote server</td>
+<td>For the <code>doFirst</code> and <code>doLast</code> sections, we define Groovy closures that will be executed in the execution phase.</td>
 </tr>
 </table>
 </div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_parameterized_tasks"><a class="link" href="#_parameterized_tasks">Parameterized Tasks</a></h2>
+<div class="sectionbody">
 <div class="paragraph">
-<p>You can use the task <code>nodeUptime</code> to show server uptime:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre>$ gradle nodeUptime
-:nodeUptime
-Host key checking is off. It may be vulnerable to man-in-the-middle attacks.
-node#1| 20:37:53 up 119 days, 10:21,  0 users,  load average: 0.10, 0.23, 0.47
-
-BUILD SUCCESSFUL in 1s
-1 actionable task: 1 executed</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>If you have multiple servers, then you may want to implement similar task for each server.
-Let&#8217;s start from defining connection parameters for each node:</p>
+<p>As we figured out, every Gradle task is dynamic, because it&#8217;s being created in the configuration phase.
+Therefore, we can use Groovy variables and Gradle project properties for the task definition:</p>
 </div>
 <div class="listingblock">
 <div class="title">build.gradle</div>
 <div class="content">
-<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">plugins {
-    id 'org.hidetake.ssh' version '2.9.0'
-}
+<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">def date = new Date().format("yyyyMMdd")
 
-ssh.settings {
-    knownHosts = allowAnyHosts
-}
-
-remotes {
-    node1 {
-        host = '192.168.1.1'
-        user = 'ubuntu'
-        password = 'ubuntu'
-    }
-    node2 {
-        host = '192.168.1.2'
-        user = 'ubuntu'
-        password = 'ubuntu'
-    }
-
-    ...
-
-    node10 {
-        host = '192.168.1.10'
-        user = 'ubuntu'
-        password = 'ubuntu'
+task "create-${server}-backup" {
+    description "Creates backup of '${server}'"
+    doLast {
+        println "Creating backup `${server}-${date}`"
+        // actually do the backup
     }
 }</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>Instead of defining similar task manually for each node (we have 100 nodes!), let&#8217;s write a simple Groovy code that generates 100 tasks.
-The previous example continues:</p>
+<p>Let&#8217;s use our Gradle file for the server <code>mars</code>:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">remotes.each { remote -&gt;                                        <i class="conum" data-value="1"></i><b>(1)</b>
-    task "${remote.name}Uptime" {                               <i class="conum" data-value="2"></i><b>(2)</b>
-        description "Shows uptime for server ${remote.name}"    <i class="conum" data-value="3"></i><b>(3)</b>
+<pre>$ gradle tasks --all -Pserver=mars
+:tasks
+
+...
+
+create-mars-backup - Creates backup of 'mars'</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>As you see, our Gradle file provides the <code>create-mars-backup</code> task.
+Let&#8217;s use this task:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>$ gradle create-mars-backup -Pserver=mars
+:create-mars-backup
+Creating backup `mars-20170722`</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In this example, we use the project property <code>server</code> that we set in the command line.
+Alternatively, we can define available servers in the build file (or in external file) and generate <code>create-&#8230;&#8203;-backup</code> for each server:</p>
+</div>
+<div class="listingblock">
+<div class="title">remotes.gradle</div>
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">remotes {
+    mars {
+        host = "..."
+        user = "..."
+        password = "..."
+    }
+    jupiter {
+        host = "..."
+        user = "..."
+        password = "..."
+    }
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">build.gradle</div>
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">plugins {
+  id 'org.hidetake.ssh' version '2.9.0'
+}
+
+apply from: 'remotes.gradle'
+
+remotes.each { remote -&gt;
+    task "create-${remote.name}-backup" {
+        description "Creates backup of '${remote.name}'"
         doLast {
-            ssh.run {
-                session(remote) {
-                    execute "uptime"                            <i class="conum" data-value="4"></i><b>(4)</b>
-                }
-            }
+            // do the backup
         }
     }
 }</code></pre>
 </div>
 </div>
-<div class="colist arabic">
-<table>
-<tr>
-<td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>Iterate through defined servers</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="2"></i><b>2</b></td>
-<td>Define a new task, using a server name</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="3"></i><b>3</b></td>
-<td>Set a task description, using a server name</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="4"></i><b>4</b></td>
-<td>Execute <code>uptime</code> on a remote server</td>
-</tr>
-</table>
-</div>
 <div class="paragraph">
-<p>Let&#8217;s check that our script contains the tasks:</p>
+<p>In this example, we define our servers in a separate file (the Gradle SSH plugin allows us to use the <code>remotes</code> section for that).
+Then we include this file into the main build file.
+Let&#8217;s check that we have a dedicated task for each server:</p>
 </div>
 <div class="listingblock">
 <div class="content">
 <pre>$ gradle tasks --all
 :tasks
-...
-node1Uptime - Shows uptime for server node1
-...
-node10Uptime - Shows uptime for server node10
 
-BUILD SUCCESSFUL in 0s
-1 actionable task: 1 executed</pre>
+...
+
+create-jupiter-backup - Creates backup of 'jupiter'
+create-mars-backup - Creates backup of 'mars'</pre>
 </div>
 </div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_task_names"><a class="link" href="#_task_names">Task Names</a></h2>
+<div class="sectionbody">
 <div class="paragraph">
-<p>For this specific example, where all the hosts are similar, you can also use Groovy code to generate hosts definitions.
-The following code generates the same definitions of the nodes from the previous example:</p>
+<p>It is the usual practice to use <a href="https://en.wikipedia.org/wiki/Camel_case">camelCase</a> (or lower camel case) convention for a task name in Gradle, for example: <code>buildEnvironment</code>.
+However, you may want to use any convention you want, and, in some cases, there is a good reason (that we will discuss later) for that.
+In the previous example, we use hyphen as a delimiter between words: <code>create-mars-backup</code>. You can even use spaces in the task name:</p>
 </div>
 <div class="listingblock">
+<div class="title">build.gradle</div>
 <div class="content">
-<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">remotes {
-    (1..10).each { n -&gt;
-        "node${n}" {
-            host = "192.168.1.${n}"
-            user = "ubuntu"
-            password = "ubuntu"
-        }
-    }
+<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">task "create ${server} backup" {
+    description "Creates backup of `${server}`"
 }</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>You can use these tasks to show uptime for specific servers:</p>
+<p>To use such task you need to enclose the task name in quotes (or double quotes):</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre>$ gradle node1Uptime node2Uptime
-...
-:node1Uptime
-node1#1| 20:37:53 up 119 days, 10:21,  0 users,  load average: 0.10, 0.23, 0.47
-:node2Uptime
-node2#1| 20:37:53 up 119 days, 10:21,  0 users,  load average: 0.11, 0.25, 0.51
-..</pre>
+<pre>$ gradle 'create mars backup' -Pserver=mars</pre>
 </div>
 </div>
 <div class="paragraph">
-<p>If you need to check uptime for all of the servers, then you can define a task that depends on each individual task:</p>
+<p>Another Gradle&#8217;s nice feature is <a href="https://docs.gradle.org/current/userguide/tutorial_gradle_command_line.html#sec:task_name_abbreviation">task name abbreviation</a>:
+when you specify tasks on the command-line, you don&#8217;t have to provide the full name of the task.
+You only need to provide enough of the task name to uniquely identify the task.
+Gradle will let you know when the provided part is ambiguous.
+For the example, where we defined two tasks for two servers:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">task nodesUptime {
-    description "Shows uptime for all servers"
-    remotes.each { remote -&gt;
-        dependsOn "${remote.name}Uptime"
-    }
-}</code></pre>
-</div>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre>$ gradle nodesUptime
+<pre>$ gradle create
 ...
-:node1Uptime
-node1#1| 20:37:53 up 119 days, 10:21,  0 users,  load average: 0.10, 0.23, 0.47
-:node2Uptime
-node2#1| 20:37:53 up 119 days, 10:21,  0 users,  load average: 0.11, 0.25, 0.51
-...
-BUILD SUCCESSFUL in 10s
-10 actionable tasks: 10 executed</pre>
+* What went wrong:
+Task 'create' is ambiguous in root project 'gradle'. Candidates are: 'create jupiter backup', 'create mars backup'.
+...</pre>
 </div>
 </div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_task_rules"><a class="link" href="#_task_rules">Task Rules</a></h2>
+<div class="sectionbody">
 <div class="paragraph">
-<p>The task works, but not very efficient: it connects to one host per time.
-You can use another implementation that uses parallel SSH connections:</p>
+<p>Sometimes you want to have a task whose behavior depends on a large or infinite number value range of parameters.
+For our example with backup tasks for two server, image that we have 100 servers and 10 operations.
+In thit case, we will end with 1000 generated tasks (Gradle will handle that) and our the output of <code>gradle tasks</code> will be insanely huge.
+Another example is if you want, let&#8217;s say, implement a task to ping a server using its name.
+A very nice and expressive way to provide such tasks are <a href="https://docs.gradle.org/current/userguide/more_about_tasks.html#sec:task_rules">task rules</a>:</p>
 </div>
 <div class="listingblock">
+<div class="title">build.gradle</div>
 <div class="content">
-<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">task nodesUptime {
-    description "Shows uptime for all servers"
-    doLast {
-        def results = ssh.run {                                         <i class="conum" data-value="1"></i><b>(1)</b>
-            remotes.each { remote -&gt;                                    <i class="conum" data-value="2"></i><b>(2)</b>
-                session(remote) {
-                    def output = execute("uptime", logging: "none")     <i class="conum" data-value="3"></i><b>(3)</b>
-                    return [name: remote.name, output: output]          <i class="conum" data-value="4"></i><b>(4)</b>
-                }
+<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">tasks.addRule("Pattern: ping-&lt;server&gt;") { String taskName -&gt;
+    if (taskName.startsWith("ping-")) {
+        task(taskName) {
+            doLast {
+                println "Pinging: " + (taskName - 'ping-')
             }
         }
-        results.each {                                                  <i class="conum" data-value="5"></i><b>(5)</b>
-            println "${it.name}: ${it.output}"
+    }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Now you can use this task rule with (almost) any server name:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>$ gradle ping-mars
+:ping-mars
+Pinging: mars</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The output of <code>gradle tasks</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>$ gradle tasks
+...
+Rules
+-----
+Pattern: ping-&lt;server&gt;
+...</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note that this is the good case for using a hyphen as a delimiter instead of camelCase convention.
+Otherwise we have to use <code>pingmars</code> or even <code>pingMars</code> (the first doesn&#8217;t look good, the second is not so reasonable if a server name is <code>mars</code>).</p>
+</div>
+<div class="paragraph">
+<p>Because a task rule creates a regular task (or several regular tasks), you can use these tasks as usual, for example, to define dependencies:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">task pingServers {
+    dependsOn 'ping-mars', 'ping-jupiter'
+}</code></pre>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_multiple_parameters_in_a_task_rule"><a class="link" href="#_multiple_parameters_in_a_task_rule">Multiple Parameters in a Task Rule</a></h3>
+<div class="paragraph">
+<p>It is possible to use multiple parameters in a task rule, for example:</p>
+</div>
+<div class="listingblock">
+<div class="title">build.gradle</div>
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">tasks.addRule("Pattern: backup-&lt;server&gt;-&lt;yyyyMMdd&gt;") { String taskName -&gt;               <i class="conum" data-value="1"></i><b>(1)</b>
+    def matcher = taskName =~ /backup-([^-]+)-(\d{8})/                                  <i class="conum" data-value="2"></i><b>(2)</b>
+    if (matcher.matches()) {
+        def (server, date) = [ matcher[0][1], Date.parse("yyyyMMdd", matcher[0][2]) ]   <i class="conum" data-value="3"></i><b>(3)</b>
+        task(taskName) {                                                                <i class="conum" data-value="4"></i><b>(4)</b>
+            doLast {
+                println "Creating backup for server ${server}, " +
+                        "date: ${date.format('MM/dd/yyyy')}"
+            }
         }
     }
 }</code></pre>
@@ -791,44 +755,240 @@ You can use another implementation that uses parallel SSH connections:</p>
 <table>
 <tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>Run several SSH sessions in parallel and wait for their termination</td>
+<td>A string argument for the <code>addRule</code> method is just a text displayed for <code>gradle tasks</code>.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="2"></i><b>2</b></td>
-<td>Define SSH session per server</td>
+<td>We use Groovy regex matcher to check if the task name contains two required parameters. We also check that the second parameter consists of 8 digits (<code>\d{8}</code>).</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="3"></i><b>3</b></td>
-<td>Execute <code>uptime</code> on a remote server and store its output</td>
+<td>We use Groovy&#8217;s multiple assignment for the <code>server</code> and <code>date</code> variables. We also parse date using the specified format.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="4"></i><b>4</b></td>
-<td>Return a map with server name and uptime</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="5"></i><b>5</b></td>
-<td>Iterate through the map and print results</td>
+<td>We define a new task with the specified name and use <code>server</code> and <code>date</code> in the <code>doLast</code> closure for the execution phase.</td>
 </tr>
 </table>
 </div>
 <div class="paragraph">
-<p>Now the task works 10 times faster:</p>
+<p>Usage example:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre>:nodesUptime
-node1:  21:32:21 up 119 days, 11:15,  0 users,  load average: 0.15, 0.13, 0.15
-...
-node10:  21:32:21 up 119 days, 11:15,  0 users,  load average: 0.15, 0.13, 0.15
+<pre>$ gradle backup-mars-20170101
+:backup-mars-20170101
+Creating backup for server mars, date: 01/01/2017</pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_tricks_with_task_rules"><a class="link" href="#_tricks_with_task_rules">Tricks with Task Rules</a></h3>
+<div class="paragraph">
+<p>Let&#8217;s modify our example with the <code>ping-&lt;server&gt;</code> task rule.
+We will use task rules with <code>=</code> and <code>/</code> instead of hyphen:</p>
+</div>
+<div class="listingblock">
+<div class="title">build.gradle</div>
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">tasks.addRule("Pattern: ping=&lt;server&gt;") { String taskName -&gt;
+    if (taskName.startsWith("ping=")) {
+        task(taskName) {
+            doLast {
+                println "Pinging: " + (taskName - 'ping=')
+            }
+        }
+    }
+}
 
-BUILD SUCCESSFUL in 1s
-1 actionable task: 1 executed</pre>
+tasks.addRule("Pattern: ping/&lt;server&gt;") { String taskName -&gt;
+    if (taskName.startsWith("ping/")) {
+        task(taskName) {
+            doLast {
+                println "Pinging: " + (taskName - 'ping/')
+            }
+        }
+    }
+}</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>There is nothing special here, you can do the same using, for example, <a href="https://www.ansible.com/">Ansible</a> or <a href="https://saltstack.com/">Salt</a>.
-However, if your team is already using Gradle as a build tool, then it can be very convenient to use Gradle for basic operations on remote servers as well.
-Also, you can use Gradle as a high-level orchestration tool: you can call your favorite configuration management tool from Gradle script and you can use that Gradle script from Jenkins job.</p>
+<p>Now we can use <code>gradle</code> with tasks like <code>ping=server</code> or <code>ping/server</code>.
+There are several obvious limitations on the task name.
+For example, it cannot begin with <code>-</code> (reserved for command line options) or contain <code>:</code> (used as a project separator).
+Using <code>/</code> and <code>=</code> in a task name is not documented, but works with the current version of Gradle.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_cli_example"><a class="link" href="#_cli_example">CLI Example</a></h3>
+<div class="paragraph">
+<p>We will use methods from the previous sections to implement a simple CLI similar to <a href="https://kubernetes.io/docs/user-guide/kubectl-overview/"><code>kubectl</code></a>.
+Our target is not the exact clone of <code>kubectl</code>, but CLI with the same principles:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>There are manageable resources, such as pods.</p>
+</li>
+<li>
+<p>There are operations for each resource, for example <code>get</code> or <code>describe</code></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Our simple CLI will support the following syntax:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>gradle get pod/&lt;name&gt;</code> to display a pod with the specified name</p>
+</li>
+<li>
+<p><code>gradle describe pod/name</code> to display details for a pod with the specified name</p>
+</li>
+<li>
+<p><code>gradle &#8230;&#8203; namespace=&lt;name&gt;</code> to specify a namespace (<code>default</code> by default)</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Our implementation has several side effects, which are not necessarily bad:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>You can specify several pods at the same time: <code>gradle get pod/pod1 pod/pod2</code></p>
+</li>
+<li>
+<p>You can specify several operations at the same time: <code>gradle get describe pod/pod1</code></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>In the beginning, let&#8217;s define several task rules:</p>
+</div>
+<div class="listingblock">
+<div class="title">build.gradle</div>
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">ext.pods = []
+ext.namespaces = []
+ext.operations = []
+
+tasks.addRule("Pattern: pod/&lt;ID&gt;") { String taskName -&gt;         <i class="conum" data-value="1"></i><b>(1)</b>
+    if (taskName.startsWith("pod/")) {
+        task(taskName) {
+            doLast {
+                pods &lt;&lt; taskName - "pod/"
+            }
+            finalizedBy 'doOperation'
+        }
+    }
+}
+
+tasks.addRule("Pattern: namespace=&lt;ID&gt;") { String taskName -&gt;   <i class="conum" data-value="2"></i><b>(2)</b>
+    if (taskName.startsWith("namespace=")) {
+        task(taskName) {
+            doLast {
+                namespaces &lt;&lt; taskName - "namespace="
+            }
+            finalizedBy 'doOperation'
+        }
+    }
+}
+
+
+tasks.addRule("Pattern: get | describe") { String taskName -&gt;   <i class="conum" data-value="3"></i><b>(3)</b>
+    if (taskName =~ /get|describe/) {
+        task(taskName) {
+            doLast {
+                operations &lt;&lt; taskName
+            }
+            finalizedBy 'doOperation'
+        }
+    }
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>A task rule for tasks like <code>pod/&lt;name&gt;</code>. We store the specified pods' names in the <code>pods</code> list.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>A task rule for tasks like <code>namespace=name</code>. We store the specified namespaces in the <code>namespaces</code> list.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>A task rule for task <code>get</code> or <code>describe</code>. We store the specified operations in the <code>operations</code> list.</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Note that these task have the finalizer task <code>doOperation</code>. Let&#8217;s define this task:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">task doOperation {
+    doLast {
+        if (pods.size() &lt; 1) {                                                          <i class="conum" data-value="1"></i><b>(1)</b>
+            throw new GradleException("Pod is not specified: pod/&lt;id&gt;")
+        }
+        if (operations.size() &lt; 1) {                                                    <i class="conum" data-value="2"></i><b>(2)</b>
+            throw new GradleException("Operation is not specified: get | describe")
+        }
+        if (namespaces.size() &lt; 1) {                                                    <i class="conum" data-value="3"></i><b>(3)</b>
+            namespaces &lt;&lt; "default"
+        }
+        namespaces.each { ns -&gt;                                                         <i class="conum" data-value="4"></i><b>(4)</b>
+            operations.each { o -&gt;
+                "do${o.capitalize()}"(ns)
+            }
+        }
+    }
+}
+
+def doGet(ns) {
+    println "Get ${pods} in ${ns}"
+}
+
+def doDescribe(ns) {
+    println "Describe: ${pods} in ${ns}"
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Check that at least one pod is specified (we can also check if one and only one, if necessary).</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Check that at least one operation is specified (we can also check if one and only one, if necessary).</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>If namespace is not specified, use the default one.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>Iterate over the specified namespaces and execute all operations for each namespace. Note that we dynamically call <code>doGet</code> or <code>doDescribe</code> methods.</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Usage example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>$ gradle get pod/pod1
+:get
+:pod/pod1
+:doOperation
+Get [pod1] in default</pre>
+</div>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -844,6 +1004,7 @@ Gradle&#8217;s Groovy support is not deprecated, and will continue to be <a href
 </td>
 </tr>
 </table>
+</div>
 </div>
 </div>
 </div>
