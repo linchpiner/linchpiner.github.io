@@ -943,11 +943,11 @@ tasks.addRule("Pattern: get | describe") { String taskName -&gt;   <i class="con
 }
 
 def doGet(ns) {
-    println "Get ${pods} in ${ns}"
+    println "Get ${pods} in ${ns} namespace"
 }
 
 def doDescribe(ns) {
-    println "Describe: ${pods} in ${ns}"
+    println "Describe: ${pods} in ${ns} namespace"
 }</code></pre>
 </div>
 </div>
@@ -972,7 +972,7 @@ def doDescribe(ns) {
 </table>
 </div>
 <div class="paragraph">
-<p>Usage example:</p>
+<p>Usage examples:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -980,7 +980,16 @@ def doDescribe(ns) {
 :get
 :pod/pod1
 :doOperation
-Get [pod1] in default</pre>
+Get [pod1] in default namespace</pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>$ gradle get pod/pod1 namespace=prod
+:get
+:pod/pod1
+:doOperation
+Get [pod1] in prod namespace</pre>
 </div>
 </div>
 <div class="admonitionblock note">
