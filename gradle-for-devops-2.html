@@ -440,7 +440,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <div class="paragraph">
 <p>In the <a href="gradle-for-devops-1.html">first part</a>, we discussed several features
 of Gradle, a popular open source build tool, that allow using it in a DevOps
-word. Specifically, Gradle&#8217;s task-based approach can be used for general
+world. Specifically, Gradle&#8217;s task-based approach can be used for general
 operations, such as provisioning or deployment. In this part, we will discuss
 how to set and use parameters in your Groovy project.</p>
 </div>
@@ -883,15 +883,15 @@ properties and to set their default values.</p>
 </div>
 <div class="paragraph">
 <p>Another option is to set a default value directly in the build file. You can
-use <code>project.hasProperty()</code> for this. For example:</p>
+use <code>project.findProperty()</code> for this. For example:</p>
 </div>
 <div class="listingblock">
 <div class="title">build.gradle</div>
 <div class="content">
 <pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">ext {
-    host = project.hasProperty("host") ? host : "127.0.0.1" <i class="conum" data-value="1"></i><b>(1)</b>
-    user = project.hasProperty("user") ? user : "root"      <i class="conum" data-value="2"></i><b>(2)</b>
-    port = project.hasProperty("port") ? port : 8080        <i class="conum" data-value="3"></i><b>(3)</b>
+    host = project.findProperty("host") ?: "127.0.0.1" <i class="conum" data-value="1"></i><b>(1)</b>
+    user = project.findProperty("user") ?: "root"      <i class="conum" data-value="2"></i><b>(2)</b>
+    port = project.findProperty("port") ?: 8080        <i class="conum" data-value="3"></i><b>(3)</b>
 }
 
 task checkConnection {
