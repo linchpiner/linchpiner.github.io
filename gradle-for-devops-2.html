@@ -883,15 +883,15 @@ properties and to set their default values.</p>
 </div>
 <div class="paragraph">
 <p>Another option is to set a default value directly in the build file. You can
-use <code>project.hasProperty()</code> for this. For example:</p>
+use <code>project.findProperty()</code> for this. For example:</p>
 </div>
 <div class="listingblock">
 <div class="title">build.gradle</div>
 <div class="content">
 <pre class="prettyprint highlight"><code class="language-groovy" data-lang="groovy">ext {
-    host = project.hasProperty("host") ? host : "127.0.0.1" <i class="conum" data-value="1"></i><b>(1)</b>
-    user = project.hasProperty("user") ? user : "root"      <i class="conum" data-value="2"></i><b>(2)</b>
-    port = project.hasProperty("port") ? port : 8080        <i class="conum" data-value="3"></i><b>(3)</b>
+    host = project.findProperty("host") ?: "127.0.0.1" <i class="conum" data-value="1"></i><b>(1)</b>
+    user = project.findProperty("user") ?: "root"      <i class="conum" data-value="2"></i><b>(2)</b>
+    port = project.findProperty("port") ?: 8080        <i class="conum" data-value="3"></i><b>(3)</b>
 }
 
 task checkConnection {
