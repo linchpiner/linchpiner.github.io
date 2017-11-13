@@ -5,7 +5,7 @@
 <!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 1.5.5">
-<title>Paul Linchpiner</title>
+<title>DevOps Plugins for Gradle</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
 /* Asciidoctor default stylesheet | MIT License | http://asciidoctor.org */
@@ -432,54 +432,135 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </head>
 <body class="article">
 <div id="header">
-<h1>Paul Linchpiner</h1>
+<h1>DevOps Plugins for Gradle</h1>
 </div>
 <div id="content">
-<div class="sect1">
-<h2 id="_kubernetes"><a class="link" href="#_kubernetes">Kubernetes</a></h2>
+<div id="preamble">
 <div class="sectionbody">
-<div class="ulist">
-<ul>
-<li>
-<p><a href="k8s-multi-container-pods.html">Multi-Container Pods in Kubernetes</a></p>
-</li>
-</ul>
+<div class="paragraph">
+<p>My subjective list of the most useful Gradle plugins for DevOps.
+The work is in progress.
+Feel free to send your comments and proposals to <code>paul</code> at <code>linchpiner</code> dot <code>com</code>.</p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_gradle"><a class="link" href="#_gradle">Gradle</a></h2>
+<h2 id="_gradle_ssh_plugin"><a class="link" href="#_gradle_ssh_plugin">1. Gradle SSH Plugin</a></h2>
 <div class="sectionbody">
-<div class="ulist">
-<ul>
-<li>
-<p><a href="gradle-for-devops-1.html">Gradle for DevOps, Part 1 - Tasks and dependencies</a></p>
-</li>
-<li>
-<p><a href="gradle-for-devops-2.html">Gradle for DevOps, Part 2 - Project parameters</a></p>
-</li>
-<li>
-<p><a href="gradle-for-devops-3.html">Gradle for DevOps, Part 3 - Local and remote operations</a></p>
-</li>
-<li>
-<p><a href="gradle-for-devops-4.html">Gradle for DevOps, Part 4 - Dynamic tasks</a></p>
-</li>
-<li>
-<p><a href="gradle-devops-plugins.html">DevOps Plugins for Gradle</a></p>
-</li>
-</ul>
+<div class="paragraph">
+<p><a href="https://gradle-ssh-plugin.github.io/" class="bare">https://gradle-ssh-plugin.github.io/</a></p>
+</div>
+<div class="paragraph">
+<p>Gradle SSH Plugin is the perfect tool for general purpose operations on remote servers.
+It support parallel operations, local and remote
+<a href="https://gradle-ssh-plugin.github.io/docs/#_enable_the_port_forwarding">port forwarding</a>,
+and
+<a href="https://gradle-ssh-plugin.github.io/docs/#_gateway_access">ssh gateways</a>
+to connect to a remote server through one or more gateway servers.</p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_miscellaneous"><a class="link" href="#_miscellaneous">Miscellaneous</a></h2>
+<h2 id="_gradle_vfs_plugin"><a class="link" href="#_gradle_vfs_plugin">2. Gradle VFS Plugin</a></h2>
 <div class="sectionbody">
-<div class="ulist">
-<ul>
-<li>
-<p><a href="maas-statuses-and-actions.html">Metal as a Service (MaaS) Statues and Actions</a></p>
-</li>
-</ul>
+<div class="paragraph">
+<p><a href="https://github.com/ysb33r/groovy-vfs" class="bare">https://github.com/ysb33r/groovy-vfs</a></p>
+</div>
+<div class="paragraph">
+<p>Groovy VFS adds a nice DSL for operations with local and remote files and directories.
+For example, you can download a remote file from one server using HTTP and upload the file to another server using SFTP.
+Another useful example, is extracting a single file from a remote archive.
+Various sources and destinations are supported: the plugin uses
+<a href="http://commons.apache.org/proper/commons-vfs/">Apache Commons VFS</a>
+libraries.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_gradle_vagrant_plugin"><a class="link" href="#_gradle_vagrant_plugin">3. Gradle Vagrant Plugin</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><a href="https://github.com/bmuschko/gradle-vagrant-plugin" class="bare">https://github.com/bmuschko/gradle-vagrant-plugin</a></p>
+</div>
+<div class="paragraph">
+<p>Gradle plugin for managing <a href="https://www.vagrantup.com/">Vagrant</a> boxes.
+Uses locally installed Vagrant.
+By default the plugin validates the installation of the Vagrant runtime and the selected provider.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_gradle_packer_plugin"><a class="link" href="#_gradle_packer_plugin">4. Gradle Packer Plugin</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><a href="https://github.com/FIDATA/gradle-packer-plugin" class="bare">https://github.com/FIDATA/gradle-packer-plugin</a></p>
+</div>
+<div class="paragraph">
+<p>Gradle plugin for running <a href="https://www.packer.io/">Packer</a> builds.
+Requires locally installed Packer.
+For AWS builders, it also requires locally installed AWS CLI.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_gradle_aws_plugin"><a class="link" href="#_gradle_aws_plugin">5. Gradle AWS Plugin</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><a href="https://github.com/classmethod/gradle-aws-plugin" class="bare">https://github.com/classmethod/gradle-aws-plugin</a></p>
+</div>
+<div class="paragraph">
+<p>Gradle AWS plugin provides useful tasks to manage AWS resources for various services, such as S3, EC2, RDS, Lambda, and others.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_gradle_docker_plugins"><a class="link" href="#_gradle_docker_plugins">6. Gradle Docker Plugins</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><a href="https://github.com/palantir/gradle-docker" class="bare">https://github.com/palantir/gradle-docker</a></p>
+</div>
+<div class="paragraph">
+<p>Three Gradle plugins for working with Docker containers,
+which provide basic tasks for building and pushing docker images,
+task for populating placeholders in a docker-compose template file with image versions resolved from dependencies,
+tasks for starting, stopping, statusing and cleaning up a named container based on a specified image.
+Plugins require locally installed Docker CLI.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_gradle_jenkins_plugin"><a class="link" href="#_gradle_jenkins_plugin">7. Gradle Jenkins Plugin</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><a href="https://github.com/AOEpeople/gradle-jenkins-job-dsl-plugin" class="bare">https://github.com/AOEpeople/gradle-jenkins-job-dsl-plugin</a></p>
+</div>
+<div class="paragraph">
+<p>Gradle plugin that provides some support tasks for maintaining a Jenkins Job DSL Script repository.
+Allows local testing of DSL scripts, local generation of Jenkins config XML files.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_gradle_cloud_deployer"><a class="link" href="#_gradle_cloud_deployer">8. Gradle Cloud Deployer</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><a href="https://github.com/qaware/gradle-cloud-deployer" class="bare">https://github.com/qaware/gradle-cloud-deployer</a></p>
+</div>
+<div class="paragraph">
+<p>Gradle plugin to deploy applications to Kubernetes and Marathon.
+Apps and Groups are supported for Marathon.
+Deployments, Services, Replication Controllers, Pods are supported for Kubernetes.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_heroku_gradle_plugin"><a class="link" href="#_heroku_gradle_plugin">9. Heroku Gradle Plugin</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><a href="https://github.com/heroku/heroku-gradle" class="bare">https://github.com/heroku/heroku-gradle</a></p>
+</div>
+<div class="paragraph">
+<p>A Gradle plugin for deploying JAR and WAR files to Heroku.</p>
 </div>
 </div>
 </div>
