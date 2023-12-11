@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 2.0.10">
-<title>Paul Linchpiner</title>
+<title>Workflow engine for DevOps</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
 /* Asciidoctor default stylesheet | MIT License | https://asciidoctor.org */
@@ -448,57 +448,174 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </head>
 <body class="article">
 <div id="header">
-<h1>Paul Linchpiner</h1>
+<h1>Workflow engine for DevOps</h1>
 </div>
 <div id="content">
 <div class="sect1">
-<h2 id="_kubernetes"><a class="link" href="#_kubernetes">Kubernetes</a></h2>
+<h2 id="_tasks"><a class="link" href="#_tasks">Tasks</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>A workflow is a directed acyclic graph (DAG).
+The nodes of that graph are tasks, minimal executable units of a workflow.
+The directed edges (or arcs) of that graph represent dependencies or order between tasks.</p>
+</div>
+<div class="paragraph">
+<p>Each task has a unique name and optional set of tags.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_dependency_and_order"><a class="link" href="#_dependency_and_order">Dependency and order</a></h2>
 <div class="sectionbody">
 <div class="ulist">
 <ul>
 <li>
-<p><a href="k8s-multi-container-pods.html">Multi-Container Pods in Kubernetes</a></p>
+<p>Dependency: if task T1 "depends on" task T2, then T2 is always executed before T1 even if only T1 needs to be executed.</p>
+</li>
+<li>
+<p>Order: if task T1 "runs after" task T2, then T2 is executed before T1 if both tasks need to be executed.
+If only T1 needs to be executed, then T2 will not be executed.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>An example of using the order between tasks:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>There are two tasks, for example, "Test1" and "Test2" that executes two tests.
+If there are no direct or indirect dependency or order between "Test1" and "Test2", then they can be executed in parallel, or only one can be executed.</p>
+</li>
+<li>
+<p>Third task, for example, "Report" processes tests result and generates a report.
+A report can be generated for Test1, Test2, or both.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Both standard dependency and order are "strong", which means that if T2 depends on (or runs after) T1 and T1 fails, then a whole workflow fails and T2 will not be executed.</p>
+</div>
+<div class="paragraph">
+<p>Sometimes you need a "weak" dependency, so T2 will be executed even if T1 fails.
+An example of the weak dependency can be a finalization task that runs even if some tasks it finalizes fail.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Finalize: if task F "finalizes" task T, then F is always executed after T even if T fails.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>A side note on systemd, which uses the following definitions:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Dependency: "wants" (strong), "requires" (weak).</p>
+</li>
+<li>
+<p>Order: "before", "after".</p>
 </li>
 </ul>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_gradle"><a class="link" href="#_gradle">Gradle</a></h2>
+<h2 id="_execution"><a class="link" href="#_execution">Execution</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>There is always at least one default task in a workflow.
+A default task can be explicitly specified, or the first defined tasks will be used as the default one.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>If nothing specified, a default task will be added to the execution plan.</p>
+</li>
+<li>
+<p>You can specify a single task or several tasks to add to the execution plan.</p>
+</li>
+<li>
+<p>Instead of specifying a task, you can specify regex, all matching tasks will be added to the execution plan.</p>
+</li>
+<li>
+<p>Instead of specifying tasks, you can specify a tag or several tags, all tasks with the specified tags will be added to the execution plan.</p>
+</li>
+<li>
+<p>Instead of specifying a tag, you can specify a regex, all tasks with matching tags will be added to the execution plan.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Then for every task in the execution plan all direct and indirect dependencies are added.</p>
+</div>
+<div class="paragraph">
+<p>Then you can specify which tasks should be removed from the execution plan:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>You can specify a task, tasks, or regex to skip, all matching tasks are removed from the execution plan.</p>
+</li>
+<li>
+<p>You can specify a tag, tags, or regex to skip, all matching tasks are removed from the execution plan.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Execution alias is a short unique name that can be used to specify which tasks/tags need to be included/excluded.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_task_predicates"><a class="link" href="#_task_predicates">Task predicates</a></h2>
 <div class="sectionbody">
 <div class="ulist">
 <ul>
 <li>
-<p><a href="gradle-for-devops-1.html">Gradle for DevOps, Part 1 - Tasks and dependencies</a></p>
+<p>Predicate "only if" is used to conditionally execute a task.</p>
 </li>
 <li>
-<p><a href="gradle-for-devops-2.html">Gradle for DevOps, Part 2 - Project parameters</a></p>
-</li>
-<li>
-<p><a href="gradle-for-devops-3.html">Gradle for DevOps, Part 3 - Local and remote operations</a></p>
-</li>
-<li>
-<p><a href="gradle-for-devops-4.html">Gradle for DevOps, Part 4 - Dynamic tasks</a></p>
-</li>
-<li>
-<p><a href="gradle-devops-plugins.html">DevOps Plugins for Gradle</a></p>
+<p>Predicate "skip if" is used to conditionally skip a task.</p>
 </li>
 </ul>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_miscellaneous"><a class="link" href="#_miscellaneous">Miscellaneous</a></h2>
+<h2 id="_task_inputs_and_outputs"><a class="link" href="#_task_inputs_and_outputs">Task inputs and outputs</a></h2>
 <div class="sectionbody">
+<div class="paragraph">
+<p>Inputs:</p>
+</div>
 <div class="ulist">
 <ul>
 <li>
-<p><a href="maas-statuses-and-actions.html">Metal as a Service (MaaS) Statues and Actions</a></p>
+<p>Constants.</p>
 </li>
 <li>
-<p><a href="workflow-engine-for-devops.html">Workflow engine for DevOps</a></p>
+<p>Environment variables, configuration file.</p>
+</li>
+<li>
+<p>Outputs of other tasks.</p>
 </li>
 </ul>
+</div>
+<div class="paragraph">
+<p>Tasks outputs can be persisted or calculated.
+An error is returned if an output is requested for a task that was never executed, cannot calculate its output, or the output was not persisted.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_other_requirements"><a class="link" href="#_other_requirements">Other requirements</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Most workflow engines have DSL to define a workflow and embed code snippets for task definitions.
+We want standard programming languages to be first class citizens in workflow.
+That means there needs to be API that can be used to embed and use workflows in the program.</p>
 </div>
 </div>
 </div>
